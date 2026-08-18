@@ -24,37 +24,21 @@ import { ProjectDetailScreen } from "./src/screens/ProjectDetailScreen";
 
 const Stack = createStackNavigator();
 
-// Temporary Dashboard View Component
-function DashboardScreen() {
-  return (
-    <View style={styles.centerContainer}>
-      <Text variant="headlineMedium" style={{ fontWeight: "bold" }}>
-        Dashboard Overview
-      </Text>
-      <Text variant="bodyMedium" style={{ marginTop: 8, opacity: 0.6 }}>
-        Welcome to your project management hub.
-      </Text>
-    </View>
-  );
-}
-
-// Custom Top Bar + Full Side Navigation Drawer
-function MainLayout({ navigation, title, children }) {
+// Layout for Main Sidebar Pages (Dashboard, Projects List)
+function MainDrawerLayout({ navigation, title, activeRoute, children }) {
   const [drawerVisible, setDrawerVisible] = useState(false);
-  const [activeRoute, setActiveRoute] = useState("ProjectDetail");
 
   const openDrawer = () => setDrawerVisible(true);
   const closeDrawer = () => setDrawerVisible(false);
 
   const navigateTo = (routeName) => {
-    setActiveRoute(routeName);
     closeDrawer();
     navigation.navigate(routeName);
   };
 
   return (
     <View style={{ flex: 1 }}>
-      {/* Top Navigation Bar */}
+      {/* Top Header with Hamburger */}
       <Appbar.Header style={{ backgroundColor: "#FFFFFF", elevation: 2 }}>
         <Appbar.Action
           icon="menu"
@@ -64,10 +48,10 @@ function MainLayout({ navigation, title, children }) {
         <Appbar.Content title={title} titleStyle={{ fontWeight: "bold" }} />
       </Appbar.Header>
 
-      {/* Main Screen Content */}
+      {/* Screen Content */}
       <View style={{ flex: 1 }}>{children}</View>
 
-      {/* Slide-out Sidebar Modal */}
+      {/* Sidebar Modal */}
       <Modal
         visible={drawerVisible}
         transparent={true}
@@ -75,12 +59,10 @@ function MainLayout({ navigation, title, children }) {
         onRequestClose={closeDrawer}
       >
         <View style={styles.modalOverlay}>
-          {/* Backdrop Click */}
           <TouchableWithoutFeedback onPress={closeDrawer}>
             <View style={styles.backdrop} />
           </TouchableWithoutFeedback>
 
-          {/* Full Sidebar Content */}
           <SafeAreaView style={styles.drawerContainer}>
             <View style={styles.drawerHeader}>
               <Avatar.Text
@@ -108,12 +90,6 @@ function MainLayout({ navigation, title, children }) {
                 onPress={() => navigateTo("Dashboard")}
               />
               <PaperDrawer.Item
-                label="Project Monitoring"
-                icon="chart-timeline-variant"
-                active={activeRoute === "ProjectDetail"}
-                onPress={() => navigateTo("ProjectDetail")}
-              />
-              <PaperDrawer.Item
                 label="Projects List"
                 icon="format-list-bulleted"
                 active={activeRoute === "Projects"}
@@ -127,39 +103,56 @@ function MainLayout({ navigation, title, children }) {
   );
 }
 
-//DashboardScreen
-//ProjectDetailScreen
-//
+// Sub-page Layout with Back Arrow (for Project Detail)
+function DetailScreenLayout({ navigation, title, children }) {
+  return (
+    <View style={{ flex: 1 }}>
+      <Appbar.Header style={{ backgroundColor: "#FFFFFF", elevation: 2 }}>
+        <Appbar.BackAction onPress={() => navigation.goBack()} />
+        <Appbar.Content title={title} titleStyle={{ fontWeight: "bold" }} />
+      </Appbar.Header>
+      <View style={{ flex: 1 }}>{children}</View>
+    </View>
+  );
+}
 
 export default function App() {
   return (
     <PaperProvider>
       <NavigationContainer>
         <Stack.Navigator
-          initialRouteName="ProjectDetail"
+          initialRouteName="Dashboard"
           screenOptions={{ headerShown: false }}
         >
           <Stack.Screen name="Dashboard">
             {(props) => (
-              <MainLayout {...props} title="Dashboard">
-                <DashboardScreen />
-              </MainLayout>
-            )}
-          </Stack.Screen>
-
-          <Stack.Screen name="ProjectDetail">
-            {(props) => (
-              <MainLayout {...props} title="Project Monitoring">
-                <ProjectDetailScreen />
-              </MainLayout>
+              <MainDrawerLayout
+                {...props}
+                title="Dashboard"
+                activeRoute="Dashboard"
+              >
+                <DashboardScreen {...props} />
+              </MainDrawerLayout>
             )}
           </Stack.Screen>
 
           <Stack.Screen name="Projects">
             {(props) => (
-              <MainLayout {...props} title="Projects Overview">
-                <ProjectsScreen />
-              </MainLayout>
+              <MainDrawerLayout
+                {...props}
+                title="Projects Overview"
+                activeRoute="Projects"
+              >
+                <ProjectsScreen {...props} />
+              </MainDrawerLayout>
+            )}
+          </Stack.Screen>
+
+          <Stack.Screen name="ProjectDetail">
+            {(props) => (
+              <DetailScreenLayout {...props} title="Project Monitoring">
+                <ProjectDetailScreen {...props} />
+              </DetailScreenLayout>
             )}
           </Stack.Screen>
         </Stack.Navigator>
@@ -169,13 +162,6 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  centerContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 16,
-    backgroundColor: "#F8F9F9",
-  },
   modalOverlay: {
     flex: 1,
     flexDirection: "row",
