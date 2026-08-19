@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, ScrollView, StyleSheet } from "react-native";
+import { View, ScrollView, StyleSheet, Dimensions } from "react-native";
 import {
   Text,
   Card,
@@ -9,14 +9,22 @@ import {
   Divider,
   Button,
 } from "react-native-paper";
+import { BarChart } from "react-native-chart-kit";
 
 // Import mock data from separate file
 import { MOCK_DASHBOARD_DATA } from "../data/mockDashboardData";
-
+const screenWidth = Dimensions.get("window").width;
 export const DashboardScreen = () => {
   const theme = useTheme();
   const [data] = useState(MOCK_DASHBOARD_DATA);
-
+  const chartData = {
+    labels: ["Transmission Line"],
+    datasets: [
+      {
+        data: [1, 2, 1, 4, 6, 3, 1, 4, 9], // Active count
+      },
+    ],
+  };
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
@@ -27,8 +35,7 @@ export const DashboardScreen = () => {
           Project Monitoring Dashboard
         </Text>
         <Text variant="bodyMedium" style={{ opacity: 0.7, marginTop: 4 }}>
-          Live portfolio view of all projects — health, schedule risk, budget
-          and progress
+          Live portfolio view of all projects
         </Text>
       </View>
 
@@ -112,30 +119,60 @@ export const DashboardScreen = () => {
       <Card style={styles.sectionCard}>
         <Card.Title
           title="Attention Needed"
-          subtitle="Projects that require follow-up — health issues, blocked stages"
+          subtitle="Projects that require follow-up"
           titleStyle={{ fontWeight: "bold" }}
         />
         <Card.Content>
           {data.attentionNeeded.map((item) => (
-            <View key={item.id} style={styles.attentionBox}>
+            <View
+              key={item.id}
+              style={{
+                backgroundColor: theme.colors.attentionNeededBackground,
+                padding: 12,
+                borderRadius: 8,
+                borderLeftWidth: 4,
+                borderLeftColor: "#D9251D",
+              }}
+            >
               <View style={styles.rowBetween}>
                 <View>
-                  <Text variant="titleMedium" style={{ fontWeight: "bold" }}>
+                  <Text
+                    variant="titleMedium"
+                    style={{
+                      fontWeight: "bold",
+                      color: theme.colors.lettersInLightBackground,
+                    }}
+                  >
                     {item.title}
                   </Text>
-                  <Text variant="bodySmall" style={{ opacity: 0.6 }}>
+                  <Text
+                    variant="bodySmall"
+                    style={{
+                      opacity: 0.6,
+                      color: theme.colors.lettersInLightBackground,
+                    }}
+                  >
                     {item.code}
                   </Text>
                 </View>
                 <Chip
                   icon="alert-circle-outline"
-                  style={{ backgroundColor: "#FADBD8" }}
-                  textColor="#922B21"
+                  style={{
+                    backgroundColor: theme.colors.attentionNeededBackground,
+                    color: theme.colors.lettersInLightBackground,
+                  }}
+                  textColor="#040000"
                 >
                   {item.status}
                 </Chip>
               </View>
-              <Text variant="bodyMedium" style={{ marginTop: 8 }}>
+              <Text
+                variant="bodyMedium"
+                style={{
+                  marginTop: 8,
+                  color: theme.colors.lettersInLightBackground,
+                }}
+              >
                 {item.progress}% physical progress · {item.stateText}
               </Text>
             </View>
@@ -233,6 +270,88 @@ export const DashboardScreen = () => {
           <Text variant="bodySmall" style={styles.insightText}>
             💡 {data.budgetProgress.insight}
           </Text>
+        </Card.Content>
+      </Card>
+
+      {/* Section: Projects by Type */}
+      <Card
+        style={[
+          styles.card,
+          { backgroundColor: theme.colors.surface, marginBottom: 16 },
+        ]}
+      >
+        <Card.Content>
+          <Text
+            variant="titleMedium"
+            style={[styles.cardTitle, { color: theme.colors.text }]}
+          >
+            Projects by Type
+          </Text>
+          <Text variant="bodySmall" style={styles.cardSubtitle}>
+            Active vs completed projects per category
+          </Text>
+
+          {/* Chart Wrapper Container */}
+          <View style={styles.chartWrapper}>
+            <BarChart
+              data={chartData}
+              width={screenWidth - 64} // Responsive width matching card margins
+              height={220}
+              yAxisLabel=""
+              yAxisSuffix=""
+              fromZero={true}
+              segments={4}
+              chartConfig={{
+                backgroundColor: theme.dark ? "#1E1E1E" : "#FAFAFA",
+                backgroundGradientFrom: theme.dark ? "#1E1E1E" : "#FAFAFA",
+                backgroundGradientTo: theme.dark ? "#1E1E1E" : "#FAFAFA",
+                decimalPlaces: 0,
+                color: (opacity = 1) => `rgba(41, 121, 255, ${opacity})`, // Bar color (#2979FF)
+                labelColor: (opacity = 1) =>
+                  theme.dark
+                    ? `rgba(255, 255, 255, ${opacity})`
+                    : `rgba(107, 114, 128, ${opacity})`,
+                style: {
+                  borderRadius: 8,
+                },
+                propsForBackgroundLines: {
+                  strokeDasharray: "3 3",
+                  stroke: theme.dark ? "#333333" : "#E5E7EB",
+                },
+              }}
+              style={styles.chartStyle}
+              showBarTops={false}
+              withInnerLines={true}
+            />
+
+            {/* Custom Tooltip Overlay matching the screenshot design */}
+            <View
+              style={[
+                styles.tooltipContainer,
+                {
+                  backgroundColor: theme.colors.surface,
+                  borderColor: theme.dark ? "#333" : "#E5E7EB",
+                },
+              ]}
+            >
+              {/* <View style={styles.tooltipRow}>
+                <View style={styles.tooltipLeftGroup}>
+                  <View
+                    style={[styles.legendDot, { backgroundColor: "#00E676" }]}
+                  />
+                  <Text variant="bodySmall" style={styles.tooltipLabel}>
+                    Completed
+                  </Text>
+                </View>
+                <Text
+                  variant="bodySmall"
+                  style={[styles.tooltipValue, { color: theme.colors.text }]}
+                >
+                  0
+                </Text>
+              </View> */}
+            </View>
+          </View>
         </Card.Content>
       </Card>
 

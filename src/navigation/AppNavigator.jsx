@@ -1,164 +1,91 @@
-import React, { useState } from "react";
-import { View, StyleSheet, TouchableOpacity } from "react-native";
-import { NavigationContainer } from "@react-navigation/native";
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React from "react";
+import { StatusBar } from "react-native";
 import {
-  useTheme,
-  Text,
-  Switch,
-  Modal,
-  Portal,
-  List,
-  Divider,
-  Avatar,
-} from "react-native-paper";
+  NavigationContainer,
+  DefaultTheme as NavigationDefaultTheme,
+  DarkTheme as NavigationDarkTheme,
+} from "@react-navigation/native";
+import { createStackNavigator } from "@react-navigation/stack";
+import { useTheme } from "react-native-paper";
+
 import { useThemeContext } from "../context/ThemeContext";
+import { MainDrawerLayout } from "../components/MainDrawerLayout";
+import { DetailScreenLayout } from "../components/DetailScreenLayout";
 
 import { DashboardScreen } from "../screens/DashboardScreen";
 import { ProjectsScreen } from "../screens/ProjectsScreen";
-import { ProjectOccupationScreen } from "../screens/ProjectOccupationScreen";
+import { ProjectDetailScreen } from "../screens/ProjectDetailScreen";
 
-const CustomHeader = ({ title, onOpenMenu }) => {
+const Stack = createStackNavigator();
+
+export function AppNavigator() {
+  const { isDarkMode } = useThemeContext();
   const theme = useTheme();
-  return (
-    <SafeAreaView edges={['top']} style={{ backgroundColor: theme.colors.surface }}>
-      <View style={[styles.header, { backgroundColor: theme.colors.surface }]}>
-        <TouchableOpacity onPress={onOpenMenu} style={styles.menuButton}>
-          <Text style={{ fontSize: 24, fontWeight: 'bold', color: theme.colors.primary }}>☰</Text>
-        </TouchableOpacity>
-        <Text variant="titleMedium" style={{ fontWeight: 'bold', color: theme.colors.onSurface }}>
-          {title}
-        </Text>
-      </View>
-    </SafeAreaView>
-  );
-};
 
-export const AppNavigator = () => {
-  const theme = useTheme();
-  const { isDarkMode, toggleTheme } = useThemeContext();
-  const [menuVisible, setMenuVisible] = useState(false);
-  const [activeScreen, setActiveScreen] = useState("Dashboard");
-  const [monitoringExpanded, setMonitoringExpanded] = useState(true);
-
-  const navigateTo = (screenName) => {
-    setActiveScreen(screenName);
-    setMenuVisible(false);
-  };
+  const navTheme = isDarkMode
+    ? {
+        ...NavigationDarkTheme,
+        colors: {
+          ...NavigationDarkTheme.colors,
+          background: theme.colors.background,
+          card: theme.colors.surface,
+          text: theme.colors.text,
+        },
+      }
+    : {
+        ...NavigationDefaultTheme,
+        colors: {
+          ...NavigationDefaultTheme.colors,
+          background: theme.colors.background,
+          card: theme.colors.surface,
+          text: theme.colors.text,
+        },
+      };
 
   return (
-    <NavigationContainer>
-      <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-        <CustomHeader
-          title={activeScreen}
-          onOpenMenu={() => setMenuVisible(true)}
-        />
-
-        <View style={{ flex: 1 }}>
-          {activeScreen === "Dashboard" && <DashboardScreen />}
-          {activeScreen === "Projects" && <ProjectsScreen />}
-          {activeScreen === "ProjectOccupation" && <ProjectOccupationScreen />}
-        </View>
-
-        <Portal>
-          <Modal
-            visible={menuVisible}
-            onDismiss={() => setMenuVisible(false)}
-            contentContainerStyle={[
-              styles.drawerModal,
-              { backgroundColor: theme.colors.surface },
-            ]}
-          >
-            <View style={styles.headerContainer}>
-              <Avatar.Text
-                size={44}
-                label="CEB"
-                style={{ backgroundColor: theme.colors.primary }}
-              />
-              <View>
-                <Text variant="titleMedium" style={{ fontWeight: "bold" }}>
-                  CEB Management
-                </Text>
-                <Text variant="bodySmall" style={{ opacity: 0.7 }}>
-                  Executive Portal
-                </Text>
-              </View>
-            </View>
-
-            <Divider style={styles.divider} />
-
-            <View style={{ flex: 1 }}>
-              <List.Accordion
-                title="Project Monitoring"
-                expanded={monitoringExpanded}
-                onPress={() => setMonitoringExpanded(!monitoringExpanded)}
+    <>
+      <StatusBar
+        barStyle={isDarkMode ? "light-content" : "dark-content"}
+        backgroundColor={theme.colors.surface}
+      />
+      <NavigationContainer theme={navTheme}>
+        <Stack.Navigator
+          initialRouteName="Dashboard"
+          screenOptions={{ headerShown: false }}
+        >
+          <Stack.Screen name="Dashboard">
+            {(props) => (
+              <MainDrawerLayout
+                {...props}
+                title="Dashboard"
+                activeRoute="Dashboard"
               >
-                <List.Item
-                  title="Dashboard"
-                  onPress={() => navigateTo("Dashboard")}
-                />
-                <List.Item
-                  title="Projects"
-                  onPress={() => navigateTo("Projects")}
-                />
-              </List.Accordion>
+                <DashboardScreen {...props} />
+              </MainDrawerLayout>
+            )}
+          </Stack.Screen>
 
-              <List.Item
-                title="Project Occupation"
-                onPress={() => navigateTo("ProjectOccupation")}
-              />
-            </View>
+          <Stack.Screen name="Projects">
+            {(props) => (
+              <MainDrawerLayout
+                {...props}
+                title="Projects Overview"
+                activeRoute="Projects"
+              >
+                <ProjectsScreen {...props} />
+              </MainDrawerLayout>
+            )}
+          </Stack.Screen>
 
-            <Divider style={styles.divider} />
-
-            <View style={styles.themeToggleContainer}>
-              <Text variant="bodyMedium">Dark Mode</Text>
-              <Switch
-                value={isDarkMode}
-                onValueChange={toggleTheme}
-                color={theme.colors.primary}
-              />
-            </View>
-          </Modal>
-        </Portal>
-      </View>
-    </NavigationContainer>
+          <Stack.Screen name="ProjectDetail">
+            {(props) => (
+              <DetailScreenLayout {...props} title="Project Monitoring">
+                <ProjectDetailScreen {...props} />
+              </DetailScreenLayout>
+            )}
+          </Stack.Screen>
+        </Stack.Navigator>
+      </NavigationContainer>
+    </>
   );
-};
-
-const styles = StyleSheet.create({
-  header: {
-    height: 56,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
-  },
-  menuButton: {
-    paddingRight: 16,
-  },
-  drawerModal: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: "75%",
-    padding: 16,
-  },
-  headerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    marginBottom: 8,
-  },
-  themeToggleContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-  },
-  divider: {
-    marginVertical: 12,
-  },
-});
+}
