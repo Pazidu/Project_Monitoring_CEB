@@ -1,14 +1,24 @@
 import React, { useState } from "react";
 import { View, StyleSheet, TouchableWithoutFeedback } from "react-native";
 import { Avatar, Text, Divider, Menu, useTheme } from "react-native-paper";
-import { userProfile } from "../data/userProfile";
+import { useAuthContext } from "../context/AuthContext"; // Import AuthContext
 
 export function ProfileHeaderMenu() {
   const [menuVisible, setMenuVisible] = useState(false);
   const theme = useTheme();
+  const { currentUser, logout } = useAuthContext(); // Access currentUser and logout
+
+  // Provide safe fallback values if currentUser is loading or null
+  const initials = currentUser?.initials || "U";
+  const name = currentUser?.name || "User";
 
   const openMenu = () => setMenuVisible(true);
   const closeMenu = () => setMenuVisible(false);
+
+  const handleLogout = () => {
+    closeMenu();
+    logout();
+  };
 
   return (
     <Menu
@@ -22,7 +32,7 @@ export function ProfileHeaderMenu() {
         <TouchableWithoutFeedback onPress={openMenu}>
           <Avatar.Text
             size={36}
-            label={userProfile.initials}
+            label={initials}
             style={styles.headerAvatar}
             labelStyle={styles.headerAvatarText}
           />
@@ -32,7 +42,7 @@ export function ProfileHeaderMenu() {
       <View style={styles.profileHeaderSection}>
         <Avatar.Text
           size={44}
-          label={userProfile.initials}
+          label={initials}
           style={styles.dropdownAvatar}
           labelStyle={styles.dropdownAvatarText}
         />
@@ -41,7 +51,7 @@ export function ProfileHeaderMenu() {
             variant="titleMedium"
             style={{ fontWeight: "bold", color: theme.colors.text }}
           >
-            {userProfile.name}
+            {name}
           </Text>
         </View>
       </View>
@@ -64,7 +74,7 @@ export function ProfileHeaderMenu() {
       <Divider />
 
       <Menu.Item
-        onPress={closeMenu}
+        onPress={handleLogout}
         title="Logout"
         leadingIcon="logout"
         titleStyle={[

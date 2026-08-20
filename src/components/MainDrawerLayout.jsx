@@ -19,7 +19,7 @@ import {
   useTheme,
 } from "react-native-paper";
 import { useThemeContext } from "../context/ThemeContext";
-import { userProfile } from "../data/userProfile";
+import { useAuthContext } from "../context/AuthContext"; // Import AuthContext
 import { ProfileHeaderMenu } from "./ProfileHeaderMenu";
 
 export function MainDrawerLayout({ navigation, title, activeRoute, children }) {
@@ -27,6 +27,7 @@ export function MainDrawerLayout({ navigation, title, activeRoute, children }) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { isDarkMode, toggleTheme } = useThemeContext();
+  const { currentUser } = useAuthContext(); // Access currentUser
 
   const openDrawer = () => setDrawerVisible(true);
   const closeDrawer = () => setDrawerVisible(false);
@@ -85,18 +86,15 @@ export function MainDrawerLayout({ navigation, title, activeRoute, children }) {
             >
               <Avatar.Text
                 size={42}
-                label={userProfile.initials}
-                style={{ backgroundColor: userProfile.avatarBgColor }}
+                label={currentUser?.initials || "U"}
+                style={{ backgroundColor: theme.colors.primaryContainer }}
               />
               <View style={{ marginLeft: 12 }}>
-                <Text
-                  variant="titleMedium"
-                  style={{ fontWeight: "bold", color: theme.colors.text }}
-                >
-                  {userProfile.name}
+                <Text variant="titleMedium" style={{ fontWeight: "bold" }}>
+                  {currentUser?.name || "User"}
                 </Text>
                 <Text variant="bodySmall" style={{ opacity: 0.6 }}>
-                  {userProfile.email}
+                  {currentUser?.email || "admin@ceb.lk"}
                 </Text>
               </View>
             </View>
@@ -132,7 +130,6 @@ export function MainDrawerLayout({ navigation, title, activeRoute, children }) {
                   style={{
                     fontSize: 14,
                     fontWeight: "500",
-                    color: theme.colors.text,
                   }}
                 >
                   Dark Mode

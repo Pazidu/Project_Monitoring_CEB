@@ -19,6 +19,14 @@ export const MOCK_DASHBOARD_DATA = {
       progress: 41,
       stateText: "On Hold · has blocked stage",
     },
+    {
+      id: "2",
+      title: "33 kV Feeder Upgrade",
+      code: "CEB-XX-2026-666446",
+      status: "Blocked",
+      progress: 42,
+      stateText: "On Hold · has blocked stage",
+    },
   ],
   budgetProgress: {
     approvedLkr: "25M",

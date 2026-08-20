@@ -1,5 +1,11 @@
 import React, { useState } from "react";
-import { View, ScrollView, StyleSheet, Dimensions } from "react-native";
+import {
+  View,
+  ScrollView,
+  StyleSheet,
+  Dimensions,
+  TouchableOpacity,
+} from "react-native";
 import {
   Text,
   Card,
@@ -8,20 +14,27 @@ import {
   useTheme,
   Divider,
   Button,
+  IconButton,
 } from "react-native-paper";
 import { BarChart } from "react-native-chart-kit";
 
 // Import mock data from separate file
 import { MOCK_DASHBOARD_DATA } from "../data/mockDashboardData";
+import LivePortfolioCard from "../components/LivePortfolioCard";
+import StatusChip from "../components/StatusChip";
 const screenWidth = Dimensions.get("window").width;
 export const DashboardScreen = () => {
+  const handleRefresh = () => {
+    // Add your refresh logic here (e.g., fetch API data or update state)
+    console.log("Dashboard refreshed");
+  };
   const theme = useTheme();
   const [data] = useState(MOCK_DASHBOARD_DATA);
   const chartData = {
     labels: ["Transmission Line"],
     datasets: [
       {
-        data: [1, 2, 1, 4, 6, 3, 1, 4, 9], // Active count
+        data: [1, 2, 1, 4], // Active count
       },
     ],
   };
@@ -29,97 +42,60 @@ export const DashboardScreen = () => {
     <ScrollView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      {/* Page Title & Subtitle */}
+      {/* Page Title & Refresh Button */}
       <View style={styles.pageHeader}>
-        <Text variant="headlineSmall" style={{ fontWeight: "bold" }}>
-          Project Monitoring Dashboard
+        <Text
+          style={{
+            fontWeight: "bold",
+            fontSize: 17,
+            marginLeft: -14,
+          }}
+        >
+          Live portfolio of all projects
         </Text>
-        <Text variant="bodyMedium" style={{ opacity: 0.7, marginTop: 4 }}>
-          Live portfolio view of all projects
-        </Text>
+
+        <TouchableOpacity
+          style={styles.refreshButton}
+          onPress={handleRefresh}
+          activeOpacity={0.6}
+        >
+          <IconButton
+            icon="refresh"
+            size={20}
+            iconColor="#475569"
+            style={{ margin: 0 }}
+          />
+        </TouchableOpacity>
       </View>
 
       {/* Top 4 KPI Metrics */}
       <View style={styles.kpiRow}>
-        <Card
-          style={[styles.kpiCard, { backgroundColor: theme.colors.surface }]}
-        >
-          <Card.Content>
-            <Text variant="bodySmall" style={{ opacity: 0.7 }}>
-              Active Projects
-            </Text>
-            <Text
-              variant="headlineMedium"
-              style={{ fontWeight: "bold", color: theme.colors.primary }}
-            >
-              {data.kpis.activeProjects}
-            </Text>
-            <Text variant="labelSmall" style={{ opacity: 0.6 }}>
-              {data.kpis.totalPortfolio} total in portfolio
-            </Text>
-          </Card.Content>
-        </Card>
-
-        <Card
-          style={[styles.kpiCard, { backgroundColor: theme.colors.surface }]}
-        >
-          <Card.Content>
-            <Text variant="bodySmall" style={{ opacity: 0.7 }}>
-              Needs Attention
-            </Text>
-            <Text
-              variant="headlineMedium"
-              style={{ fontWeight: "bold", color: "#D9251D" }}
-            >
-              {data.kpis.needsAttention}
-            </Text>
-            <Text variant="labelSmall" style={{ opacity: 0.6 }}>
-              health, blocked stages
-            </Text>
-          </Card.Content>
-        </Card>
-
-        <Card
-          style={[styles.kpiCard, { backgroundColor: theme.colors.surface }]}
-        >
-          <Card.Content>
-            <Text variant="bodySmall" style={{ opacity: 0.7 }}>
-              Overdue
-            </Text>
-            <Text variant="headlineMedium" style={{ fontWeight: "bold" }}>
-              {data.kpis.overdue}
-            </Text>
-            <Text variant="labelSmall" style={{ opacity: 0.6 }}>
-              past planned end date
-            </Text>
-          </Card.Content>
-        </Card>
-
-        <Card
-          style={[styles.kpiCard, { backgroundColor: theme.colors.surface }]}
-        >
-          <Card.Content>
-            <Text variant="bodySmall" style={{ opacity: 0.7 }}>
-              Budget Utilized
-            </Text>
-            <Text
-              variant="headlineMedium"
-              style={{ fontWeight: "bold", color: theme.colors.primary }}
-            >
-              {data.kpis.budgetUtilizedPercentage}%
-            </Text>
-            <Text variant="labelSmall" style={{ opacity: 0.6 }}>
-              LKR {data.kpis.budgetUtilizedLkr} of {data.kpis.totalBudgetLkr}
-            </Text>
-          </Card.Content>
-        </Card>
+        <LivePortfolioCard
+          name="Active Projects"
+          data={data.kpis.activeProjects}
+          color={theme.colors.primary}
+        />
+        <LivePortfolioCard
+          name="Needs Attention"
+          data={data.kpis.needsAttention}
+          color="#D9251D"
+        />
+        <LivePortfolioCard
+          name="Overdue"
+          data={data.kpis.overdue}
+          color="#D9251D"
+        />
+        <LivePortfolioCard
+          name="Budget Utilized"
+          data={data.kpis.budgetUtilizedPercentage + "%"}
+          color={theme.colors.primary}
+        />
       </View>
 
       {/* Section: Attention Needed */}
       <Card style={styles.sectionCard}>
         <Card.Title
           title="Attention Needed"
-          subtitle="Projects that require follow-up"
           titleStyle={{ fontWeight: "bold" }}
         />
         <Card.Content>
@@ -132,6 +108,7 @@ export const DashboardScreen = () => {
                 borderRadius: 8,
                 borderLeftWidth: 4,
                 borderLeftColor: "#D9251D",
+                marginBottom: 4,
               }}
             >
               <View style={styles.rowBetween}>
@@ -155,26 +132,8 @@ export const DashboardScreen = () => {
                     {item.code}
                   </Text>
                 </View>
-                <Chip
-                  icon="alert-circle-outline"
-                  style={{
-                    backgroundColor: theme.colors.attentionNeededBackground,
-                    color: theme.colors.lettersInLightBackground,
-                  }}
-                  textColor="#040000"
-                >
-                  {item.status}
-                </Chip>
+                <StatusChip status={item.status} />
               </View>
-              <Text
-                variant="bodyMedium"
-                style={{
-                  marginTop: 8,
-                  color: theme.colors.lettersInLightBackground,
-                }}
-              >
-                {item.progress}% physical progress · {item.stateText}
-              </Text>
             </View>
           ))}
         </Card.Content>
@@ -184,7 +143,6 @@ export const DashboardScreen = () => {
       <Card style={styles.sectionCard}>
         <Card.Title
           title="Budget & Progress"
-          subtitle="Portfolio spend against approved budget"
           titleStyle={{ fontWeight: "bold" }}
         />
         <Card.Content>
@@ -193,7 +151,10 @@ export const DashboardScreen = () => {
               <Text variant="bodySmall" style={{ opacity: 0.7 }}>
                 Approved
               </Text>
-              <Text variant="titleMedium" style={{ fontWeight: "bold" }}>
+              <Text
+                variant="titleMedium"
+                style={{ fontWeight: "bold", alignSelf: "center" }}
+              >
                 LKR {data.budgetProgress.approvedLkr}
               </Text>
             </View>
@@ -472,4 +433,24 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   snapshotItem: { paddingVertical: 8 },
+  pageHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  refreshButton: {
+    backgroundColor: "transparent",
+    padding: 0,
+    margin: 0,
+    elevation: 0, // Removes Android shadow
+    shadowOpacity: 0, // Removes iOS shadow
+  },
+  refreshText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#475569",
+    marginLeft: 2,
+  },
 });
