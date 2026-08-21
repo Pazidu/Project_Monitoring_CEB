@@ -179,10 +179,14 @@ export const DashboardScreen = () => {
             </View>
           </View>
 
-          <View style={{ marginTop: 16 }}>
-            <Text variant="bodySmall" style={{ marginBottom: 4 }}>
-              Budget utilization ({data.budgetProgress.utilizationRate * 100}%)
-            </Text>
+          <View style={{ marginTop: 30, marginBottom: 15 }}>
+            <View style={styles.rowBetween}>
+              <Text variant="bodySmall">Budget utilization</Text>
+              <Text variant="bodySmall" style={{ fontWeight: "bold" }}>
+                {Math.round(data.budgetProgress.utilizationRate * 100)}%
+              </Text>
+            </View>
+
             <ProgressBar
               progress={data.budgetProgress.utilizationRate}
               color={theme.colors.primary}
@@ -194,16 +198,16 @@ export const DashboardScreen = () => {
 
           <Text
             variant="titleSmall"
-            style={{ fontWeight: "bold", marginBottom: 8 }}
+            style={{ fontWeight: "bold", marginBottom: 20 }}
           >
             AVERAGE PROGRESS
           </Text>
           <View style={{ gap: 8 }}>
-            <View>
+            <View style={{ marginBottom: 10 }}>
               <View style={styles.rowBetween}>
                 <Text variant="bodySmall">Physical</Text>
                 <Text variant="bodySmall" style={{ fontWeight: "bold" }}>
-                  {data.budgetProgress.avgPhysicalProgress * 100}%
+                  {Math.round(data.budgetProgress.avgPhysicalProgress * 100)}%
                 </Text>
               </View>
               <ProgressBar
@@ -213,11 +217,11 @@ export const DashboardScreen = () => {
               />
             </View>
 
-            <View>
+            <View style={{ marginBottom: 10 }}>
               <View style={styles.rowBetween}>
                 <Text variant="bodySmall">Financial</Text>
                 <Text variant="bodySmall" style={{ fontWeight: "bold" }}>
-                  {data.budgetProgress.avgFinancialProgress * 100}%
+                  {Math.round(data.budgetProgress.avgFinancialProgress * 100)}%
                 </Text>
               </View>
               <ProgressBar
@@ -228,9 +232,9 @@ export const DashboardScreen = () => {
             </View>
           </View>
 
-          <Text variant="bodySmall" style={styles.insightText}>
+          {/* <Text variant="bodySmall" style={styles.insightText}>
             💡 {data.budgetProgress.insight}
-          </Text>
+          </Text> */}
         </Card.Content>
       </Card>
 
@@ -316,25 +320,44 @@ export const DashboardScreen = () => {
         </Card.Content>
       </Card>
 
-      {/* Health & Funding Row */}
-      <View style={styles.splitRow}>
+      {/* Health */}
+      <View style={styles.sectionCard}>
         <Card
           style={[styles.halfCard, { backgroundColor: theme.colors.surface }]}
         >
+          <Card.Title
+            title="Project Health"
+            titleStyle={{ fontWeight: "bold" }}
+          />
           <Card.Content>
-            <Text variant="titleSmall" style={{ fontWeight: "bold" }}>
-              Project Health
-            </Text>
-            <Text variant="bodyMedium" style={{ marginTop: 8 }}>
-              On Hold: {data.projectHealth.onHold} (
-              {data.projectHealth.onHoldPercentage})
-            </Text>
-            <Text variant="bodySmall" style={{ opacity: 0.6, marginTop: 4 }}>
-              Total Projects: {data.projectHealth.totalProjects}
-            </Text>
+            <View style={{ marginBottom: 10 }}>
+              <View style={styles.rowBetween}>
+                <Text variant="bodySmall">On Hold</Text>
+                <Text variant="bodySmall" style={{ fontWeight: "bold" }}>
+                  {Math.round(data.projectHealth.onHoldPercentage * 100)}%
+                </Text>
+              </View>
+              <ProgressBar
+                progress={data.projectHealth.onHoldPercentage}
+                color="#8e8f8e"
+                style={styles.progressBar}
+              />
+            </View>
+            <Divider style={{ marginVertical: 16 }} />
+            <View style={styles.rowBetween}>
+              <Text variant="bodySmall" style={{ opacity: 0.6, marginTop: 4 }}>
+                Total Projects:
+              </Text>
+              <Text variant="bodySmall" style={{ fontWeight: "bold" }}>
+                {data.projectHealth.totalProjects}
+              </Text>
+            </View>
           </Card.Content>
         </Card>
+      </View>
 
+      {/* Funding */}
+      <View style={{ flexDirection: "row", gap: 10, marginBottom: 16 }}>
         <Card
           style={[styles.halfCard, { backgroundColor: theme.colors.surface }]}
         >

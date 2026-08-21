@@ -40,7 +40,7 @@ export const MOCK_DASHBOARD_DATA = {
   },
   projectHealth: {
     onHold: 1,
-    onHoldPercentage: "100%",
+    onHoldPercentage: 1,
     totalProjects: 1,
   },
   fundingSources: {
