@@ -10,7 +10,7 @@ const customLight = {
     background: "#F4F6F8",
     surface: "#FFFFFF",
     lettersInLightBackground: "#000000", // Black letters for light background
-    attentionNeededBackground: "#d8c2c0", // Light red background for attention needed
+    attentionNeededBackground: "#ffc9c5", // Light red background for attention needed
   },
 };
 

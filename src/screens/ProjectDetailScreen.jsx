@@ -20,30 +20,66 @@ import {
 } from "react-native-paper";
 import { WebView } from "react-native-webview";
 import { MOCK_PROJECT_DETAILS } from "../data/mockProjectDetailsData";
+import { UpdatePlanModal } from "../components/UpdatePlanModal";
+import { UpdateProjectInformationModal } from "../components/UpdateProjectInformationModal";
+import { UpdateProjectHealthStatusModal } from "../components/UpdateProjectHealthStatusModal";
 
 const { width } = Dimensions.get("window");
 
 export const ProjectDetailScreen = () => {
   const theme = useTheme();
-  const [project] = useState(MOCK_PROJECT_DETAILS);
+  const [project, setProject] = useState(MOCK_PROJECT_DETAILS);
   const [activeTab, setActiveTab] = useState("Description");
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Modal Visibility States
+  const [isPlanModalVisible, setIsPlanModalVisible] = useState(false);
+  const [isDetailsModalVisible, setIsDetailsModalVisible] = useState(false);
+  const [healthModalVisible, setHealthModalVisible] = useState(false);
+  const [currentHealthStatus, setCurrentHealthStatus] = useState(
+    project.status || "On Hold",
+  );
   const metrics = project?.metrics || {};
   const overview = project?.overview || {};
 
+  // Handler to update project state when modal saves
+  const handleSaveProjectDetails = (updatedInfo) => {
+    setProject((prev) => ({
+      ...prev,
+      ...updatedInfo,
+    }));
+    setIsDetailsModalVisible(false);
+  };
+  const handleUpdateHealthStatus = (newStatus) => {
+    setCurrentHealthStatus(newStatus);
+    setProject((prev) => ({
+      ...prev,
+      status: newStatus,
+    }));
+    setHealthModalVisible(false);
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
+      case "On Track":
+        return { bg: "#22C55E", text: "#ffffff" };
+      case "At Risk":
+        return { bg: "#F7B13C", text: "#ffffff" };
+      case "Delayed":
+        return { bg: "#F26969", text: "#ffffff" };
       case "Completed":
-        return { bg: "#D4EFDF", text: "#196F3D" };
-      case "In Progress":
-        return { bg: "#D6EAF8", text: "#1B4F72" };
-      case "Blocked":
-        return { bg: "#FADBD8", text: "#78281F" };
+        return { bg: "#889eff", text: "#ffffff" };
+      case "On Hold":
       default:
-        return { bg: "#EAECEE", text: "#5D6D7E" };
+        return { bg: "#94A3B8", text: "#ffffff" };
+      case "Bidding Process":
+        return { bg: "#E1B3F1", text: "#ffffff" };
     }
   };
+
+  const currentChipColors = getStatusColor(
+    project.status || currentHealthStatus,
+  );
 
   const tabs = [
     { key: "Description", label: "Description", icon: "file-document-outline" },
@@ -119,12 +155,9 @@ export const ProjectDetailScreen = () => {
           <Text variant="headlineSmall" style={styles.boldText}>
             {project.title}
           </Text>
-          <Chip style={{ backgroundColor: "#B0BEC5" }} textColor="#37474F">
-            {project.status}
-          </Chip>
         </View>
         <Text variant="bodySmall" style={styles.subtitleText}>
-          {project.code} · {project.category} · LKR · USD · EUR
+          {project.code} · {project.category}
         </Text>
         <View style={styles.actionButtonsRow}>
           <Button
@@ -132,19 +165,52 @@ export const ProjectDetailScreen = () => {
             compact
             icon="calendar"
             style={styles.actionBtn}
+            onPress={() => setIsPlanModalVisible(true)}
           >
             Update Plan
           </Button>
+          <UpdatePlanModal
+            visible={isPlanModalVisible}
+            onDismiss={() => setIsPlanModalVisible(false)}
+            project={project}
+          />
+
+          {/* Update Details Button & Connected Modal */}
           <Button
             mode="contained"
             compact
             icon="pencil"
             style={styles.actionBtn}
+            onPress={() => setIsDetailsModalVisible(true)}
           >
             Update Details
           </Button>
+          <UpdateProjectInformationModal
+            visible={isDetailsModalVisible}
+            onDismiss={() => setIsDetailsModalVisible(false)}
+            onSave={handleSaveProjectDetails}
+            project={project}
+          />
+          <TouchableOpacity onPress={() => setHealthModalVisible(true)}>
+            <Chip
+              style={{
+                backgroundColor: currentChipColors.bg,
+                justifyContent: "center",
+              }}
+              textColor={currentChipColors.text}
+            >
+              {project.status || currentHealthStatus}
+            </Chip>
+          </TouchableOpacity>
         </View>
       </View>
+
+      <UpdateProjectHealthStatusModal
+        visible={healthModalVisible}
+        onDismiss={() => setHealthModalVisible(false)}
+        currentStatus={project.status || currentHealthStatus}
+        onUpdateStatus={handleUpdateHealthStatus}
+      />
 
       {/* Top Metric Cards */}
       <ScrollView
@@ -410,17 +476,15 @@ export const ProjectDetailScreen = () => {
         </Card.Content>
       </Card>
 
-      {/* MAP SECTION (Placed Right After Project Overview) */}
+      {/* MAP SECTION */}
       <Card style={[styles.cardMargin, { overflow: "hidden" }]}>
         <View style={styles.mapContainer}>
-          {/* Webview rendering OpenStreetMap */}
           <WebView
             originWhitelist={["*"]}
             source={{ html: leafletHTML }}
             style={styles.mapWebView}
           />
 
-          {/* Top Control Overlay: Search & Actions */}
           <View style={styles.mapTopControlsOverlay}>
             <ScrollView
               horizontal
@@ -485,7 +549,6 @@ export const ProjectDetailScreen = () => {
             </TouchableOpacity>
           </View>
 
-          {/* Left Side Tool Controls Overlay (Zoom, Draw, Markers) */}
           <View style={styles.leftToolsContainer}>
             <View style={styles.toolGroup}>
               <TouchableOpacity style={styles.toolBtn}>
@@ -536,7 +599,6 @@ export const ProjectDetailScreen = () => {
             </View>
           </View>
 
-          {/* Bottom Right Re-center Floating Button */}
           <TouchableOpacity style={styles.recenterBtn}>
             <IconButton
               icon="crosshairs-gps"
@@ -584,7 +646,6 @@ export const ProjectDetailScreen = () => {
         </Card.Content>
       </Card>
 
-      {/* Attachments */}
       {/* Attachments Section */}
       <Card style={styles.cardMargin}>
         <View style={styles.attachmentHeaderRow}>
@@ -775,7 +836,7 @@ const styles = StyleSheet.create({
   // Currency Card layout
   currencyCard: {
     flexDirection: "row",
-    justify_content: "space-between",
+    justifyContent: "space-between",
     alignItems: "center",
     backgroundColor: "#FAFAFA",
     padding: 12,
@@ -900,8 +961,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#F0F0F0",
   },
+
   // Attachments
-  // Attachment Card Styles
   attachmentHeaderRow: {
     flexDirection: "row",
     justifyContent: "space-between",

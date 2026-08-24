@@ -387,31 +387,40 @@ export const DashboardScreen = () => {
           </Button>
         </View>
         <Card.Content>
-          {data.portfolioSnapshot.map((item) => (
-            <View key={item.id} style={styles.snapshotItem}>
+          {data.attentionNeeded.map((item) => (
+            <View
+              key={item.id}
+              style={{
+                backgroundColor: theme.colors.attentionNeededBackground,
+                padding: 12,
+                borderRadius: 8,
+                borderLeftWidth: 4,
+                borderLeftColor: "#D9251D",
+                marginBottom: 4,
+              }}
+            >
               <View style={styles.rowBetween}>
-                <Text variant="titleSmall" style={{ fontWeight: "bold" }}>
-                  {item.title}
-                </Text>
-                <Chip compact style={{ backgroundColor: "#FADBD8" }}>
-                  {item.status}
-                </Chip>
-              </View>
-              <Text variant="bodySmall" style={{ opacity: 0.6 }}>
-                {item.code} · {item.category}
-              </Text>
-
-              <View style={[styles.rowBetween, { marginTop: 12 }]}>
-                <Text variant="bodySmall">
-                  Progress:{" "}
-                  <Text style={{ fontWeight: "bold" }}>
-                    {item.physicalProgress}
+                <View>
+                  <Text
+                    variant="titleMedium"
+                    style={{
+                      fontWeight: "bold",
+                      color: theme.colors.lettersInLightBackground,
+                    }}
+                  >
+                    {item.title}
                   </Text>
-                </Text>
-                <Text variant="bodySmall">
-                  Budget:{" "}
-                  <Text style={{ fontWeight: "bold" }}>{item.budget}</Text>
-                </Text>
+                  <Text
+                    variant="bodySmall"
+                    style={{
+                      opacity: 0.6,
+                      color: theme.colors.lettersInLightBackground,
+                    }}
+                  >
+                    {item.code}
+                  </Text>
+                </View>
+                <StatusChip status={item.status} />
               </View>
             </View>
           ))}
