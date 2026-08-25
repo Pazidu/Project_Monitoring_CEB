@@ -30,15 +30,6 @@ export const ProjectsScreen = () => {
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.pageHeader}>
-          <Text variant="headlineSmall" style={{ fontWeight: "bold" }}>
-            Projects
-          </Text>
-          <Text variant="bodyMedium" style={{ opacity: 0.7, marginTop: 4 }}>
-            Manage and track all infrastructure projects
-          </Text>
-        </View>
-
         <Searchbar
           placeholder="Search projects by code or name..."
           onChangeText={setSearchQuery}
@@ -65,13 +56,18 @@ export const ProjectsScreen = () => {
                     {item.title}
                   </Text>
                   <Text variant="bodySmall" style={{ opacity: 0.6 }}>
-                    {item.code} · {item.category}
+                    {item.code}
+                  </Text>
+                  <Text variant="bodySmall" style={{ opacity: 0.6 }}>
+                    {item.category}
                   </Text>
                 </View>
                 <Chip
                   compact
-                  style={{ backgroundColor: "#FADBD8" }}
-                  textColor="#922B21"
+                  style={{
+                    backgroundColor: "#ff5748",
+                    textColor: { color: theme.colors.lettersInLightBackground },
+                  }}
                 >
                   {item.status}
                 </Chip>
@@ -82,7 +78,7 @@ export const ProjectsScreen = () => {
                   <View style={styles.rowBetween}>
                     <Text variant="bodySmall">Physical Progress</Text>
                     <Text variant="bodySmall" style={{ fontWeight: "bold" }}>
-                      {item.physicalProgress * 100}%
+                      {Math.round(item.physicalProgress * 100)}%
                     </Text>
                   </View>
                   <ProgressBar
@@ -96,7 +92,7 @@ export const ProjectsScreen = () => {
                   <View style={styles.rowBetween}>
                     <Text variant="bodySmall">Financial Progress</Text>
                     <Text variant="bodySmall" style={{ fontWeight: "bold" }}>
-                      {item.financialProgress * 100}%
+                      {Math.round(item.financialProgress * 100)}%
                     </Text>
                   </View>
                   <ProgressBar

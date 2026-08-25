@@ -58,7 +58,7 @@ export function AppNavigator() {
                 {(props) => (
                   <MainDrawerLayout
                     {...props}
-                    title="Projects Overview"
+                    title="Projects"
                     activeRoute="Projects"
                   >
                     <ProjectsScreen {...props} />
@@ -68,7 +68,7 @@ export function AppNavigator() {
 
               <Stack.Screen name="ProjectDetail">
                 {(props) => (
-                  <DetailScreenLayout {...props} title="Project Monitoring">
+                  <DetailScreenLayout {...props} title="">
                     <ProjectDetailScreen {...props} />
                   </DetailScreenLayout>
                 )}

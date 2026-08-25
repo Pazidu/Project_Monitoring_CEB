@@ -16,7 +16,7 @@ import {
   Button,
   IconButton,
 } from "react-native-paper";
-import { BarChart } from "react-native-chart-kit";
+import { StackedBarChart, PieChart } from "react-native-chart-kit";
 
 // Import mock data from separate file
 import { MOCK_DASHBOARD_DATA } from "../data/mockDashboardData";
@@ -38,6 +38,73 @@ export const DashboardScreen = () => {
       },
     ],
   };
+  const fundingSourcesList = data.fundingSourcesList || [
+    {
+      id: "1",
+      label: "Local (CEB / Treasury)",
+      count: 4,
+      percentage: "50%",
+      color: "#2979FF",
+    },
+    {
+      id: "2",
+      label: "ADB Loan",
+      count: 2,
+      percentage: "25%",
+      color: "#00E676",
+    },
+    {
+      id: "3",
+      label: "World Bank Grant",
+      count: 1,
+      percentage: "12.5%",
+      color: "#FF9100",
+    },
+    {
+      id: "4",
+      label: "JICA Funding",
+      count: 1,
+      percentage: "12.5%",
+      color: "#651FFF",
+    },
+  ];
+
+  // Map to PieChart structure
+  const pieChartData = fundingSourcesList.map((item) => ({
+    name: item.label,
+    population: item.count,
+    color: item.color,
+    legendFontColor: theme.colors.text,
+    legendFontSize: 12,
+  }));
+
+  const projectTypesData = {
+    labels: [
+      "Trans..",
+      "GridSub",
+      "UG Cable",
+      "Thermal",
+      "Hydro",
+      "Solar",
+      "Wind",
+      "SCADA",
+      "IT/Digital",
+    ],
+    legend: ["Active", "Completed"],
+    data: [
+      [1, 3], // Transmission Line: 1 Active (Blue), 3 Completed (Green) -> Total: 4
+      [2, 1], // Grid Substation
+      [1, 0], // Underground Cable
+      [0, 2], // Power Plant (Thermal)
+      [3, 1], // Power Plant (Hydro)
+      [2, 4], // Renewable Energy (Solar)
+      [1, 2], // Renewable Energy (Wind)
+      [2, 0], // SCADA/Control Systems
+      [4, 1], // IT/Digital
+    ],
+    barColors: ["#2979FF", "#00E676"], // Blue = Active, Green = Completed
+  };
+
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
@@ -231,92 +298,65 @@ export const DashboardScreen = () => {
               />
             </View>
           </View>
-
-          {/* <Text variant="bodySmall" style={styles.insightText}>
-            💡 {data.budgetProgress.insight}
-          </Text> */}
         </Card.Content>
       </Card>
 
       {/* Section: Projects by Type */}
-      <Card
-        style={[
-          styles.card,
-          { backgroundColor: theme.colors.surface, marginBottom: 16 },
-        ]}
-      >
+      <Card style={styles.sectionCard}>
+        <Card.Title
+          title="Projects by Type"
+          titleStyle={{ fontWeight: "bold" }}
+        />
         <Card.Content>
-          <Text
-            variant="titleMedium"
-            style={[styles.cardTitle, { color: theme.colors.text }]}
-          >
-            Projects by Type
-          </Text>
-          <Text variant="bodySmall" style={styles.cardSubtitle}>
-            Active vs completed projects per category
-          </Text>
+          {/* Custom Legend */}
+          <View style={styles.legendContainer}>
+            <View style={styles.legendItem}>
+              <View
+                style={[styles.legendDot, { backgroundColor: "#2979FF" }]}
+              />
+              <Text variant="bodySmall">Active</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View
+                style={[styles.legendDot, { backgroundColor: "#00E676" }]}
+              />
+              <Text variant="bodySmall">Completed</Text>
+            </View>
+          </View>
 
-          {/* Chart Wrapper Container */}
-          <View style={styles.chartWrapper}>
-            <BarChart
-              data={chartData}
-              width={screenWidth - 64} // Responsive width matching card margins
-              height={220}
-              yAxisLabel=""
-              yAxisSuffix=""
+          {/* Horizontal Scroll Wrapper for 9 categories */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <StackedBarChart
+              data={projectTypesData}
+              width={540} // Scaled width to make room for all 9 labels
+              height={240}
               fromZero={true}
-              segments={4}
+              decimalPlaces={0}
+              hideLegend={true}
               chartConfig={{
                 backgroundColor: theme.dark ? "#1E1E1E" : "#FAFAFA",
                 backgroundGradientFrom: theme.dark ? "#1E1E1E" : "#FAFAFA",
                 backgroundGradientTo: theme.dark ? "#1E1E1E" : "#FAFAFA",
                 decimalPlaces: 0,
-                color: (opacity = 1) => `rgba(41, 121, 255, ${opacity})`, // Bar color (#2979FF)
+                color: (opacity = 1) =>
+                  theme.dark
+                    ? `rgba(255, 255, 255, ${opacity})`
+                    : `rgba(107, 114, 128, ${opacity})`,
                 labelColor: (opacity = 1) =>
                   theme.dark
                     ? `rgba(255, 255, 255, ${opacity})`
                     : `rgba(107, 114, 128, ${opacity})`,
-                style: {
-                  borderRadius: 8,
-                },
                 propsForBackgroundLines: {
                   strokeDasharray: "3 3",
                   stroke: theme.dark ? "#333333" : "#E5E7EB",
                 },
               }}
-              style={styles.chartStyle}
-              showBarTops={false}
-              withInnerLines={true}
+              style={{
+                marginVertical: 8,
+                borderRadius: 8,
+              }}
             />
-
-            {/* Custom Tooltip Overlay matching the screenshot design */}
-            <View
-              style={[
-                styles.tooltipContainer,
-                {
-                  backgroundColor: theme.colors.surface,
-                  borderColor: theme.dark ? "#333" : "#E5E7EB",
-                },
-              ]}
-            >
-              {/* <View style={styles.tooltipRow}>
-                <View style={styles.tooltipLeftGroup}>
-                  <View
-                    style={[styles.legendDot, { backgroundColor: "#00E676" }]}
-                  />
-                  <Text variant="bodySmall" style={styles.tooltipLabel}>
-                    Completed
-                  </Text>
-                </View>
-                <Text
-                  variant="bodySmall"
-                  style={[styles.tooltipValue, { color: theme.colors.text }]}
-                >
-                  0
-                </Text>
-              </View> */}
-            </View>
-          </View>
+          </ScrollView>
         </Card.Content>
       </Card>
 
@@ -356,25 +396,61 @@ export const DashboardScreen = () => {
         </Card>
       </View>
 
-      {/* Funding */}
-      <View style={{ flexDirection: "row", gap: 10, marginBottom: 16 }}>
-        <Card
-          style={[styles.halfCard, { backgroundColor: theme.colors.surface }]}
-        >
-          <Card.Content>
-            <Text variant="titleSmall" style={{ fontWeight: "bold" }}>
-              Funding Sources
-            </Text>
-            <Text variant="bodyMedium" style={{ marginTop: 8 }}>
-              {data.fundingSources.label}
-            </Text>
-            <Text variant="bodySmall" style={{ opacity: 0.6, marginTop: 4 }}>
-              {data.fundingSources.count} project (
-              {data.fundingSources.percentage})
-            </Text>
-          </Card.Content>
-        </Card>
-      </View>
+      {/* Multi-Source Funding Sources Card */}
+      <Card
+        style={[styles.sectionCard, { backgroundColor: theme.colors.surface }]}
+      >
+        <Card.Title
+          title="Funding Sources"
+          titleStyle={{ fontWeight: "bold" }}
+        />
+        <Card.Content>
+          {/* Donut Chart Display */}
+          <View style={styles.pieContainer}>
+            <PieChart
+              data={pieChartData}
+              width={screenWidth - 64}
+              height={180}
+              chartConfig={{
+                color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+              }}
+              accessor={"population"}
+              backgroundColor={"transparent"}
+              paddingLeft={(screenWidth - 64) / 4}
+              center={[0, 0]}
+              absolute={false}
+              hasLegend={false}
+            />
+          </View>
+
+          {/* Dynamic List of Funding Sources */}
+          <View style={{ marginTop: 8 }}>
+            {fundingSourcesList.map((item) => {
+              const numericPercent = parseFloat(item.percentage) / 100;
+              return (
+                <View key={item.id}>
+                  <View style={styles.fundingLegendRow}>
+                    <View style={styles.fundingLegendLeft}>
+                      <View
+                        style={[
+                          styles.fundingDot,
+                          { backgroundColor: item.color },
+                        ]}
+                      />
+                      <Text variant="bodyMedium" style={{ fontWeight: "600" }}>
+                        {item.label}
+                      </Text>
+                    </View>
+                    <Text variant="bodyMedium" style={{ color: "#64748B" }}>
+                      {item.count} - {item.percentage}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        </Card.Content>
+      </Card>
 
       {/* Section: Portfolio Snapshot */}
       <Card style={[styles.sectionCard, { marginBottom: 32 }]}>
@@ -484,5 +560,59 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#475569",
     marginLeft: 2,
+  },
+  pieContainer: {
+    alignItems: "center",
+    justify: "center",
+    marginVertical: 4,
+  },
+  fundingLegendRow: {
+    flexDirection: "row",
+    justify: "space-between",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  fundingLegendLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  fundingDot: {
+    width: 14,
+    height: 10,
+    borderRadius: 4,
+  },
+  fundingProgressBarBackground: {
+    height: 6,
+    width: "100%",
+    backgroundColor: "#E2E8F0",
+    borderRadius: 3,
+    overflow: "hidden",
+  },
+  fundingProgressBarFill: {
+    height: "100%",
+    borderRadius: 3,
+  },
+  cardTitle: {
+    marginBottom: 2,
+  },
+  cardSubtitle: {
+    color: "#64748B",
+    marginBottom: 12,
+  },
+  legendContainer: {
+    flexDirection: "row",
+    gap: 16,
+    marginBottom: 8,
+  },
+  legendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  legendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
 });
