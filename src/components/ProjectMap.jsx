@@ -153,185 +153,200 @@ export const ProjectMap = ({
       <body>
         <div id="map"></div>
         <script>
-          var map = L.map('map', { zoomControl: false }).setView([${INITIAL_CENTER[0]}, ${INITIAL_CENTER[1]}], ${INITIAL_ZOOM});
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        var map = L.map('map', { zoomControl: false }).setView([${INITIAL_CENTER[0]}, ${INITIAL_CENTER[1]}], ${INITIAL_ZOOM});
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: 'Leaflet | © OpenStreetMap contributors'
-          }).addTo(map);
+        }).addTo(map);
 
-          var drawnItems = new L.FeatureGroup();
-          map.addLayer(drawnItems);
+        var drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
 
-          var activeHandler = null;
-          var searchMarker = null;
+        var activeHandler = null;
+        var searchMarker = null;
 
-          // 3. Load saved drawings onto the map
-          var initialGeoJSON = ${initialDataJSON};
-          if (initialGeoJSON && initialGeoJSON.features) {
-            L.geoJSON(initialGeoJSON, {
-              pointToLayer: function(feature, latlng) {
-                if (feature.properties && feature.properties.isCircle) {
-                  return L.circle(latlng, {
-                    radius: feature.properties.radius,
-                    color: '#3498DB',
-                    fillColor: '#3498DB',
-                    fillOpacity: 0.2
-                  });
-                }
-                return L.marker(latlng);
-              },
-              style: function(feature) {
-                if (feature.geometry.type === 'LineString') {
-                  return { color: '#9B59B6', weight: 4 };
-                }
-                return { color: '#E74C3C', fillColor: '#E74C3C', fillOpacity: 0.3 };
-              },
-              onEachFeature: function(feature, layer) {
-                drawnItems.addLayer(layer);
-              }
-            });
-          }
-
-          function sendToReactNative(type, payload) {
-            var message = JSON.stringify(Object.assign({ type: type }, payload));
-            if (window.ReactNativeWebView) {
-              window.ReactNativeWebView.postMessage(message);
-            }
-          }
-
-          function getGeoJSONData() {
-            var data = drawnItems.toGeoJSON();
+        // Function to serialize layers cleanly including Circle metadata
+        function getGeoJSONData() {
+            var data = { type: "FeatureCollection", features: [] };
+            
             drawnItems.eachLayer(function(layer) {
-              if (layer instanceof L.Circle) {
-                data.features.forEach(function(feature) {
-                  if (feature.geometry.type === 'Point' && 
-                      feature.geometry.coordinates[0] === layer.getLatLng().lng && 
-                      feature.geometry.coordinates[1] === layer.getLatLng().lat) {
-                    feature.properties = feature.properties || {};
-                    feature.properties.isCircle = true;
-                    feature.properties.radius = layer.getRadius();
-                  }
-                });
-              }
+            var feature;
+            if (layer instanceof L.Circle) {
+                feature = {
+                type: "Feature",
+                properties: {
+                    isCircle: true,
+                    radius: layer.getRadius(),
+                    color: layer.options.color || '#3498DB',
+                    fillColor: layer.options.fillColor || '#3498DB',
+                    fillOpacity: layer.options.fillOpacity || 0.2
+                },
+                geometry: {
+                    type: "Point",
+                    coordinates: [layer.getLatLng().lng, layer.getLatLng().lat]
+                }
+                };
+            } else if (typeof layer.toGeoJSON === 'function') {
+                feature = layer.toGeoJSON();
+            }
+            if (feature) data.features.push(feature);
             });
             return data;
-          }
+        }
 
-          function syncLayers() {
+        // Reload saved drawings onto the map
+        var initialGeoJSON = ${initialDataJSON};
+        if (initialGeoJSON && initialGeoJSON.features) {
+            L.geoJSON(initialGeoJSON, {
+            pointToLayer: function(feature, latlng) {
+                // If properties mark this point as a Circle, recreate it as L.circle
+                if (feature.properties && feature.properties.isCircle) {
+                return L.circle(latlng, {
+                    radius: feature.properties.radius,
+                    color: feature.properties.color || '#3498DB',
+                    fillColor: feature.properties.fillColor || '#3498DB',
+                    fillOpacity: feature.properties.fillOpacity || 0.2
+                });
+                }
+                // Otherwise, render a standard Marker
+                return L.marker(latlng);
+            },
+            style: function(feature) {
+                if (feature.geometry.type === 'LineString') {
+                return { color: '#9B59B6', weight: 4 };
+                }
+                return { color: '#E74C3C', fillColor: '#E74C3C', fillOpacity: 0.3 };
+            },
+            onEachFeature: function(feature, layer) {
+                drawnItems.addLayer(layer);
+            }
+            });
+        }
+
+        function sendToReactNative(type, payload) {
+            var message = JSON.stringify(Object.assign({ type: type }, payload));
+            if (window.ReactNativeWebView) {
+            window.ReactNativeWebView.postMessage(message);
+            }
+        }
+
+        function syncLayers() {
             sendToReactNative('LAYERS_UPDATED', { geojson: getGeoJSONData() });
-          }
+        }
 
-          document.addEventListener("message", handleNativeMessage);
-          window.addEventListener("message", handleNativeMessage);
+        document.addEventListener("message", handleNativeMessage);
+        window.addEventListener("message", handleNativeMessage);
 
-          function handleNativeMessage(event) {
+        function handleNativeMessage(event) {
             try {
-              var data = JSON.parse(event.data);
-              if (data.type === 'RECENTER') {
+            var data = JSON.parse(event.data);
+            if (data.type === 'RECENTER') {
                 map.flyTo([data.lat, data.lng], data.zoom, { animate: true, duration: 1 });
-              } else if (data.type === 'ZOOM_IN') {
+            } else if (data.type === 'ZOOM_IN') {
                 map.zoomIn();
-              } else if (data.type === 'ZOOM_OUT') {
+            } else if (data.type === 'ZOOM_OUT') {
                 map.zoomOut();
-              } else if (data.type === 'SEARCH') {
+            } else if (data.type === 'SEARCH') {
                 performSearch(data.query);
-              } else if (data.type === 'START_DRAW') {
+            } else if (data.type === 'START_DRAW') {
                 startDrawingMode(data.mode);
-              } else if (data.type === 'START_EDIT') {
+            } else if (data.type === 'START_EDIT') {
                 startEditMode();
-              } else if (data.type === 'START_DELETE') {
+            } else if (data.type === 'START_DELETE') {
                 startDeleteMode();
-              } else if (data.type === 'CANCEL_MODE') {
+            } else if (data.type === 'CANCEL_MODE') {
                 stopActiveMode();
-              } else if (data.type === 'EXPORT_LAYERS') {
+            } else if (data.type === 'EXPORT_LAYERS') {
                 sendToReactNative('EXPORTED_LAYERS', { geojson: getGeoJSONData() });
-              }
+            }
             } catch (err) {
-              console.error(err);
+            console.error(err);
             }
-          }
+        }
 
-          function stopActiveMode() {
+        function stopActiveMode() {
             if (activeHandler) {
-              activeHandler.disable();
-              if (typeof activeHandler.save === 'function') {
+            activeHandler.disable();
+            if (typeof activeHandler.save === 'function') {
                 activeHandler.save();
-              }
-              activeHandler = null;
             }
-          }
+            activeHandler = null;
+            }
+        }
 
-          function startDrawingMode(mode) {
+        function startDrawingMode(mode) {
             stopActiveMode();
             switch (mode) {
-              case 'polyline':
+            case 'polyline':
                 activeHandler = new L.Draw.Polyline(map, { shapeOptions: { color: '#9B59B6', weight: 4 } });
                 break;
-              case 'polygon':
+            case 'polygon':
                 activeHandler = new L.Draw.Polygon(map, { shapeOptions: { color: '#E74C3C', fillColor: '#E74C3C', fillOpacity: 0.3 } });
                 break;
-              case 'circle':
+            case 'circle':
                 activeHandler = new L.Draw.Circle(map, { shapeOptions: { color: '#3498DB', fillColor: '#3498DB', fillOpacity: 0.2 } });
                 break;
-              case 'marker':
+            case 'marker':
                 activeHandler = new L.Draw.Marker(map);
                 break;
             }
             if (activeHandler) activeHandler.enable();
-          }
+        }
 
-          function startEditMode() {
+        function startEditMode() {
             stopActiveMode();
             activeHandler = new L.EditToolbar.Edit(map, {
-              featureGroup: drawnItems,
-              selectedPathOptions: { color: '#FE5A00', opacity: 0.8, dashArray: '10, 10' }
+            featureGroup: drawnItems,
+            selectedPathOptions: { color: '#FE5A00', opacity: 0.8, dashArray: '10, 10' }
             });
             activeHandler.enable();
-          }
+        }
 
-          function startDeleteMode() {
+        function startDeleteMode() {
             stopActiveMode();
             activeHandler = new L.EditToolbar.Delete(map, {
-              featureGroup: drawnItems
+            featureGroup: drawnItems
             });
             activeHandler.enable();
-          }
+        }
 
-          map.on(L.Draw.Event.CREATED, function (e) {
-            drawnItems.addLayer(e.layer);
+        // Handle layer creation
+        map.on(L.Draw.Event.CREATED, function (e) {
+            var layer = e.layer;
+            drawnItems.addLayer(layer);
             stopActiveMode();
             syncLayers();
-          });
+        });
 
-          map.on(L.Draw.Event.EDITED, function (e) {
+        map.on(L.Draw.Event.EDITED, function (e) {
             syncLayers();
-          });
+        });
 
-          map.on(L.Draw.Event.DELETED, function (e) {
+        map.on(L.Draw.Event.DELETED, function (e) {
             syncLayers();
-          });
+        });
 
-          function performSearch(query) {
+        function performSearch(query) {
             var url = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query);
             fetch(url)
-              .then(function(res) { return res.json(); })
-              .then(function(results) {
+            .then(function(res) { return res.json(); })
+            .then(function(results) {
                 if (results && results.length > 0) {
-                  var item = results[0];
-                  var lat = parseFloat(item.lat);
-                  var lon = parseFloat(item.lon);
+                var item = results[0];
+                var lat = parseFloat(item.lat);
+                var lon = parseFloat(item.lon);
 
-                  if (searchMarker) map.removeLayer(searchMarker);
+                if (searchMarker) map.removeLayer(searchMarker);
 
-                  searchMarker = L.marker([lat, lon]).addTo(map);
-                  searchMarker.bindPopup(item.display_name).openPopup();
+                searchMarker = L.marker([lat, lon]).addTo(map);
+                searchMarker.bindPopup(item.display_name).openPopup();
 
-                  map.flyTo([lat, lon], 13, { animate: true, duration: 1.5 });
+                map.flyTo([lat, lon], 13, { animate: true, duration: 1.5 });
                 }
-              })
-              .catch(function(err) {
+            })
+            .catch(function(err) {
                 console.error("Geocoding failed:", err);
-              });
-          }
+            });
+        }
         </script>
       </body>
     </html>
