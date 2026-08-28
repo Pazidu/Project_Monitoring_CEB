@@ -16,13 +16,12 @@ import {
   Button,
   IconButton,
   Avatar,
-  TextInput,
 } from "react-native-paper";
-import { WebView } from "react-native-webview";
 import { MOCK_PROJECT_DETAILS } from "../data/mockProjectDetailsData";
 import { UpdatePlanModal } from "../components/UpdatePlanModal";
 import { UpdateProjectInformationModal } from "../components/UpdateProjectInformationModal";
 import { UpdateProjectHealthStatusModal } from "../components/UpdateProjectHealthStatusModal";
+import { ProjectMap } from "../components/ProjectMap"; // Imported Map Component
 
 const { width } = Dimensions.get("window");
 
@@ -31,6 +30,7 @@ export const ProjectDetailScreen = () => {
   const [project, setProject] = useState(MOCK_PROJECT_DETAILS);
   const [activeTab, setActiveTab] = useState("Description");
   const [searchQuery, setSearchQuery] = useState("");
+  const [isMapFullscreen, setIsMapFullscreen] = useState(false);
 
   // Modal Visibility States
   const [isPlanModalVisible, setIsPlanModalVisible] = useState(false);
@@ -42,7 +42,6 @@ export const ProjectDetailScreen = () => {
   const metrics = project?.metrics || {};
   const overview = project?.overview || {};
 
-  // Handler to update project state when modal saves
   const handleSaveProjectDetails = (updatedInfo) => {
     setProject((prev) => ({
       ...prev,
@@ -50,6 +49,7 @@ export const ProjectDetailScreen = () => {
     }));
     setIsDetailsModalVisible(false);
   };
+
   const handleUpdateHealthStatus = (newStatus) => {
     setCurrentHealthStatus(newStatus);
     setProject((prev) => ({
@@ -93,116 +93,79 @@ export const ProjectDetailScreen = () => {
     { key: "Currencies", label: "Currencies", icon: "cash-multiple" },
   ];
 
-  // Leaflet HTML template with Sri Lanka map tiles and vector layers
-  const leafletHTML = `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-        <style>
-          body, html, #map { margin: 0; padding: 0; height: 100%; width: 100%; }
-          .leaflet-control-attribution { font-size: 9px; }
-        </style>
-      </head>
-      <body>
-        <div id="map"></div>
-        <script>
-          var map = L.map('map', { zoomControl: false }).setView([7.8731, 80.7718], 8);
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: 'Leaflet | © OpenStreetMap contributors'
-          }).addTo(map);
-
-          // Sample Red Polygon over Kurunegala area
-          var polygon = L.polygon([
-            [7.6, 80.2],
-            [7.8, 80.5],
-            [7.3, 80.4],
-            [7.4, 80.1]
-          ], { color: '#E74C3C', fillColor: '#E74C3C', fillOpacity: 0.25, weight: 2 }).addTo(map);
-
-          // Purple Polyline
-          var polyline = L.polyline([
-            [7.2906, 80.6337],
-            [7.4863, 80.3623],
-            [8.0, 80.7]
-          ], { color: '#9B59B6', weight: 3 }).addTo(map);
-
-          // Circle
-          var circle = L.circle([7.6, 80.6], {
-            color: '#E74C3C',
-            fillColor: '#E74C3C',
-            fillOpacity: 0.1,
-            radius: 12000
-          }).addTo(map);
-
-          // Markers
-          L.marker([7.4863, 80.3623]).addTo(map);
-          L.marker([7.2906, 80.6337]).addTo(map);
-        </script>
-      </body>
-    </html>
-  `;
-
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
       {/* Header Bar */}
       <View style={styles.headerBox}>
-        <View style={styles.rowBetween}>
-          <Text variant="headlineSmall" style={styles.boldText}>
-            {project.title}
-          </Text>
+        <View style={styles.topInfoRow}>
+          <View style={styles.titleContainer}>
+            <Text variant="titleMedium" style={styles.boldTitle}>
+              {project.title}
+            </Text>
+          </View>
         </View>
-        <Text variant="bodySmall" style={styles.subtitleText}>
-          {project.code} · {project.category}
-        </Text>
-        <View style={styles.actionButtonsRow}>
-          <Button
-            mode="outlined"
-            compact
-            icon="calendar"
-            style={styles.actionBtn}
-            onPress={() => setIsPlanModalVisible(true)}
-          >
-            Update Plan
-          </Button>
-          <UpdatePlanModal
-            visible={isPlanModalVisible}
-            onDismiss={() => setIsPlanModalVisible(false)}
-            project={project}
-          />
+        <View style={styles.topInfoRow}>
+          <View>
+            <Text variant="bodySmall" style={styles.subtitleText}>
+              {project.code}
+            </Text>
+            <Text variant="bodySmall" style={styles.subtitleText}>
+              {project.category}
+            </Text>
+          </View>
 
-          {/* Update Details Button & Connected Modal */}
-          <Button
-            mode="contained"
-            compact
-            icon="pencil"
-            style={styles.actionBtn}
-            onPress={() => setIsDetailsModalVisible(true)}
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => setHealthModalVisible(true)}
+            style={styles.chipWrapper}
           >
-            Update Details
-          </Button>
-          <UpdateProjectInformationModal
-            visible={isDetailsModalVisible}
-            onDismiss={() => setIsDetailsModalVisible(false)}
-            onSave={handleSaveProjectDetails}
-            project={project}
-          />
-          <TouchableOpacity onPress={() => setHealthModalVisible(true)}>
             <Chip
-              style={{
-                backgroundColor: currentChipColors.bg,
-                justifyContent: "center",
-              }}
+              compact
+              style={{ backgroundColor: currentChipColors.bg }}
               textColor={currentChipColors.text}
             >
               {project.status || currentHealthStatus}
             </Chip>
           </TouchableOpacity>
         </View>
+
+        <View style={styles.actionButtonsRow}>
+          <Button
+            mode="outlined"
+            compact
+            icon="calendar"
+            style={styles.actionBtn}
+            contentStyle={styles.btnContent}
+            onPress={() => setIsPlanModalVisible(true)}
+          >
+            Update Plan
+          </Button>
+
+          <Button
+            mode="contained"
+            compact
+            icon="pencil"
+            style={styles.actionBtn}
+            contentStyle={styles.btnContent}
+            onPress={() => setIsDetailsModalVisible(true)}
+          >
+            Update Details
+          </Button>
+        </View>
+
+        <UpdatePlanModal
+          visible={isPlanModalVisible}
+          onDismiss={() => setIsPlanModalVisible(false)}
+          project={project}
+        />
+        <UpdateProjectInformationModal
+          visible={isDetailsModalVisible}
+          onDismiss={() => setIsDetailsModalVisible(false)}
+          onSave={handleSaveProjectDetails}
+          project={project}
+        />
       </View>
 
       <UpdateProjectHealthStatusModal
@@ -213,127 +176,162 @@ export const ProjectDetailScreen = () => {
       />
 
       {/* Top Metric Cards */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.metricCardsScroll}
-      >
-        <Card style={styles.metricCard}>
+      <View style={styles.metricsGrid}>
+        <Card style={[styles.metricCard]}>
           <Card.Content style={styles.cardContentPadding}>
             <View style={styles.rowBetween}>
-              <Text variant="labelSmall" style={styles.dimLabel}>
+              <Text
+                variant="labelSmall"
+                style={styles.dimLabel}
+                numberOfLines={1}
+              >
                 Physical Progress
               </Text>
-              <IconButton icon="pulse" size={14} style={styles.noMarginIcon} />
+              <IconButton
+                icon="pulse"
+                size={16}
+                style={styles.noMarginIcon}
+                iconColor="#3B82F6"
+              />
             </View>
-            <ProgressBar
-              progress={metrics.physicalProgress || 0}
-              color="#333"
-              style={styles.miniProgressBar}
-            />
             <Text
               variant="titleMedium"
-              style={[styles.boldText, { marginTop: 4 }]}
+              style={[styles.boldText, styles.metricValue]}
             >
-              {(metrics.physicalProgress || 0) * 100}%
+              {Math.round((metrics.physicalProgress || 0) * 100)}%
             </Text>
+            <ProgressBar
+              progress={metrics.physicalProgress || 0}
+              color="#3B82F6"
+              style={styles.miniProgressBar}
+            />
           </Card.Content>
         </Card>
 
-        <Card style={styles.metricCard}>
+        <Card style={[styles.metricCard]}>
           <Card.Content style={styles.cardContentPadding}>
             <View style={styles.rowBetween}>
-              <Text variant="labelSmall" style={styles.dimLabel}>
+              <Text
+                variant="labelSmall"
+                style={styles.dimLabel}
+                numberOfLines={1}
+              >
                 Financial Progress
               </Text>
               <IconButton
                 icon="wallet-outline"
-                size={14}
+                size={16}
                 style={styles.noMarginIcon}
+                iconColor="#F39C12"
               />
             </View>
+            <Text
+              variant="titleMedium"
+              style={[styles.boldText, styles.metricValue]}
+            >
+              {Math.round((metrics.financialProgress || 0) * 100)}%
+            </Text>
             <ProgressBar
               progress={metrics.financialProgress || 0}
               color="#F39C12"
               style={styles.miniProgressBar}
             />
-            <Text
-              variant="titleMedium"
-              style={[styles.boldText, { marginTop: 4 }]}
-            >
-              {(metrics.financialProgress || 0) * 100}%
-            </Text>
-            <Text variant="labelSmall" style={styles.dimLabel}>
+            <Text variant="labelSmall" style={styles.subText} numberOfLines={1}>
               LKR {metrics.spentLkr} spent
             </Text>
           </Card.Content>
         </Card>
 
-        <Card style={styles.metricCard}>
+        <Card style={[styles.metricCard]}>
           <Card.Content style={styles.cardContentPadding}>
             <View style={styles.rowBetween}>
-              <Text variant="labelSmall" style={styles.dimLabel}>
-                Timeline
-              </Text>
-              <IconButton
-                icon="calendar-range"
-                size={14}
-                style={styles.noMarginIcon}
-              />
-            </View>
-            <Text
-              variant="bodyMedium"
-              style={[styles.boldText, { marginTop: 8 }]}
-            >
-              {metrics.timeline?.display}
-            </Text>
-          </Card.Content>
-        </Card>
-
-        <Card style={styles.metricCard}>
-          <Card.Content style={styles.cardContentPadding}>
-            <View style={styles.rowBetween}>
-              <Text variant="labelSmall" style={styles.dimLabel}>
+              <Text
+                variant="labelSmall"
+                style={styles.dimLabel}
+                numberOfLines={1}
+              >
                 Organization
               </Text>
               <IconButton
                 icon="office-building"
-                size={14}
+                size={16}
                 style={styles.noMarginIcon}
+                iconColor="#64748B"
               />
             </View>
             <Text
-              variant="bodyMedium"
-              style={[styles.boldText, { marginTop: 4 }]}
+              variant="titleMedium"
+              style={[styles.boldText, styles.metricValue]}
+              numberOfLines={1}
             >
               {metrics.organization?.name}
             </Text>
-            <Text variant="labelSmall" style={styles.dimLabel}>
+            <Text variant="labelSmall" style={styles.subText} numberOfLines={1}>
               {metrics.organization?.location}
             </Text>
           </Card.Content>
         </Card>
 
-        <Card style={styles.metricCard}>
+        <Card style={[styles.metricCard]}>
           <Card.Content style={styles.cardContentPadding}>
             <View style={styles.rowBetween}>
-              <Text variant="labelSmall" style={styles.dimLabel}>
-                Estimated Budget
-              </Text>
-              <IconButton icon="cash" size={14} style={styles.noMarginIcon} />
+              <View>
+                <Text variant="labelSmall" style={styles.dimLabel}>
+                  Estimated Budget
+                </Text>
+                <Text
+                  variant="titleMedium"
+                  style={[styles.boldText, { color: "#0F172A", marginTop: 2 }]}
+                >
+                  LKR {metrics.budget?.estimatedLkr}
+                </Text>
+              </View>
+              <IconButton
+                icon="cash-multiple"
+                size={20}
+                style={styles.noMarginIcon}
+                iconColor="#10B981"
+              />
             </View>
-            <Text variant="titleMedium" style={styles.boldText}>
-              LKR {metrics.budget?.estimatedLkr}
-            </Text>
-            <Text variant="labelSmall" style={styles.dimLabel}>
-              Actual: LKR {metrics.budget?.actualLkr}
-            </Text>
-            <Text variant="labelSmall" style={{ fontSize: 10, opacity: 0.5 }}>
-              {metrics.budget?.foreignEquivalent}
+
+            <View style={styles.budgetFooter}>
+              <Text variant="labelSmall" style={styles.subText}>
+                Actual:{" "}
+                <Text style={{ fontWeight: "600", color: "#334155" }}>
+                  LKR {metrics.budget?.actualLkr}
+                </Text>
+              </Text>
+            </View>
+          </Card.Content>
+        </Card>
+
+        <Card style={[styles.metricCard, styles.fullWidthCard]}>
+          <Card.Content style={styles.cardContentPadding}>
+            <View style={styles.rowBetween}>
+              <Text
+                variant="labelSmall"
+                style={styles.dimLabel}
+                numberOfLines={1}
+              >
+                Timeline
+              </Text>
+              <IconButton
+                icon="calendar-range"
+                size={16}
+                style={styles.noMarginIcon}
+                iconColor="#64748B"
+              />
+            </View>
+            <Text
+              variant="titleMedium"
+              style={[styles.boldText, styles.metricValue]}
+              numberOfLines={2}
+            >
+              {metrics.timeline?.display || "N/A"}
             </Text>
           </Card.Content>
         </Card>
-      </ScrollView>
+      </View>
 
       {/* Tabbed Project Overview */}
       <Card style={styles.cardMargin}>
@@ -476,139 +474,13 @@ export const ProjectDetailScreen = () => {
         </Card.Content>
       </Card>
 
-      {/* MAP SECTION */}
-      <Card style={[styles.cardMargin, { overflow: "hidden" }]}>
-        <View style={styles.mapContainer}>
-          <WebView
-            originWhitelist={["*"]}
-            source={{ html: leafletHTML }}
-            style={styles.mapWebView}
-          />
-
-          <View style={styles.mapTopControlsOverlay}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.topControlScrollContent}
-            >
-              <View style={styles.searchBarBox}>
-                <IconButton
-                  icon="magnify"
-                  size={18}
-                  style={styles.noMarginIcon}
-                />
-                <TextInput
-                  placeholder="Search places"
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                  style={styles.searchInput}
-                  underlineColor="transparent"
-                  activeUnderlineColor="transparent"
-                  placeholderTextColor="#777"
-                />
-              </View>
-
-              <TouchableOpacity style={styles.mapActionButton}>
-                <IconButton
-                  icon="pencil-outline"
-                  size={16}
-                  iconColor="#444"
-                  style={styles.noMarginIcon}
-                />
-                <Text style={styles.mapActionText}>Edit Layer</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.mapActionButton}>
-                <IconButton
-                  icon="trash-can-outline"
-                  size={16}
-                  iconColor="#444"
-                  style={styles.noMarginIcon}
-                />
-                <Text style={styles.mapActionText}>Delete Layer</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.mapActionButton}>
-                <IconButton
-                  icon="file-upload-outline"
-                  size={16}
-                  iconColor="#444"
-                  style={styles.noMarginIcon}
-                />
-                <Text style={styles.mapActionText}>Import KML</Text>
-              </TouchableOpacity>
-            </ScrollView>
-
-            <TouchableOpacity style={styles.fullscreenBtn}>
-              <IconButton
-                icon="fullscreen"
-                size={18}
-                iconColor="#444"
-                style={styles.noMarginIcon}
-              />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.leftToolsContainer}>
-            <View style={styles.toolGroup}>
-              <TouchableOpacity style={styles.toolBtn}>
-                <Text style={styles.zoomText}>+</Text>
-              </TouchableOpacity>
-              <View style={styles.toolDivider} />
-              <TouchableOpacity style={styles.toolBtn}>
-                <Text style={styles.zoomText}>−</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={[styles.toolGroup, { marginTop: 8 }]}>
-              <TouchableOpacity style={styles.toolBtn}>
-                <IconButton
-                  icon="vector-polyline"
-                  size={16}
-                  iconColor="#333"
-                  style={styles.noMarginIcon}
-                />
-              </TouchableOpacity>
-              <View style={styles.toolDivider} />
-              <TouchableOpacity style={styles.toolBtn}>
-                <IconButton
-                  icon="hexagon-outline"
-                  size={16}
-                  iconColor="#333"
-                  style={styles.noMarginIcon}
-                />
-              </TouchableOpacity>
-              <View style={styles.toolDivider} />
-              <TouchableOpacity style={styles.toolBtn}>
-                <IconButton
-                  icon="circle-outline"
-                  size={16}
-                  iconColor="#333"
-                  style={styles.noMarginIcon}
-                />
-              </TouchableOpacity>
-              <View style={styles.toolDivider} />
-              <TouchableOpacity style={styles.toolBtn}>
-                <IconButton
-                  icon="map-marker-outline"
-                  size={16}
-                  iconColor="#333"
-                  style={styles.noMarginIcon}
-                />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <TouchableOpacity style={styles.recenterBtn}>
-            <IconButton
-              icon="crosshairs-gps"
-              size={18}
-              iconColor="#444"
-              style={styles.noMarginIcon}
-            />
-          </TouchableOpacity>
-        </View>
-      </Card>
+      {/* EXTRACTED MAP COMPONENT */}
+      <ProjectMap
+        isMapFullscreen={isMapFullscreen}
+        setIsMapFullscreen={setIsMapFullscreen}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+      />
 
       {/* Project Flows */}
       <Card style={styles.cardMargin}>
@@ -773,13 +645,39 @@ export const ProjectDetailScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16 },
-  headerBox: { marginBottom: 12 },
-  subtitleText: { opacity: 0.6, marginTop: 4 },
-  actionButtonsRow: { flexDirection: "row", gap: 10, marginTop: 12 },
-  actionBtn: { borderRadius: 6 },
-  metricCardsScroll: { marginBottom: 16 },
-  metricCard: { width: 170, marginRight: 10, borderRadius: 8 },
+  headerBox: { padding: 16, gap: 12 },
+  topInfoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  titleContainer: { flex: 1 },
+  boldTitle: { fontWeight: "bold", lineHeight: 26 },
+  subtitleText: { color: "#64748B", marginTop: 2 },
+  chipWrapper: { alignSelf: "flex-start" },
+  actionButtonsRow: { flexDirection: "row", gap: 8, marginTop: 4 },
+  actionBtn: { flex: 1, borderRadius: 8 },
+  btnContent: { paddingVertical: 2 },
+
+  // Grid metrics
+  metricsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    marginBottom: 14,
+  },
+  metricCard: { width: "48.5%", borderRadius: 8 },
+  fullWidthCard: { width: "100%" },
   cardContentPadding: { paddingHorizontal: 12, paddingVertical: 10 },
+  metricValue: { marginTop: 6, marginBottom: 4 },
+  subText: { color: "#64748B", marginTop: 4, fontSize: 11 },
+  budgetFooter: {
+    marginTop: 6,
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: "#F1F5F9",
+  },
   cardMargin: { marginBottom: 14, borderRadius: 8 },
   rowBetween: {
     flexDirection: "row",
@@ -787,6 +685,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   rowAlign: { flexDirection: "row", alignItems: "center", gap: 6 },
+  rowAlignFlex: { flexDirection: "row", alignItems: "center", flex: 1 },
   boldText: { fontWeight: "bold" },
   dimLabel: { opacity: 0.6 },
   noMarginIcon: { margin: 0, padding: 0, width: 22, height: 22 },
@@ -846,181 +745,49 @@ const styles = StyleSheet.create({
   },
   baseChip: { backgroundColor: "#FCF3CF", height: 20 },
 
-  // MAP STYLES
-  mapContainer: { height: 380, width: "100%", position: "relative" },
-  mapWebView: { flex: 1 },
-  mapTopControlsOverlay: {
-    position: "absolute",
-    top: 10,
-    left: 10,
-    right: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    zIndex: 10,
-  },
-  topControlScrollContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 8,
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-  },
-  searchBarBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F7F9F9",
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    height: 34,
-    width: 140,
-    marginRight: 6,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 12,
-    height: 34,
-    backgroundColor: "transparent",
-    paddingHorizontal: 0,
-  },
-  mapActionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderLeftWidth: 1,
-    borderLeftColor: "#E5E7E9",
-  },
-  mapActionText: {
-    fontSize: 12,
-    color: "#333",
-    marginLeft: 2,
-    fontWeight: "500",
-  },
-  fullscreenBtn: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 6,
-    padding: 6,
-    elevation: 3,
-    marginLeft: 6,
-  },
-
-  // Left Draw Tools
-  leftToolsContainer: { position: "absolute", top: 60, left: 10, zIndex: 10 },
-  toolGroup: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 6,
-    elevation: 3,
-    alignItems: "center",
-    width: 34,
-  },
-  toolBtn: {
-    width: 34,
-    height: 32,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  zoomText: { fontSize: 18, fontWeight: "bold", color: "#333" },
-  toolDivider: { width: 24, height: 1, backgroundColor: "#E5E7E9" },
-  recenterBtn: {
-    position: "absolute",
-    bottom: 24,
-    right: 10,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 6,
-    padding: 6,
-    elevation: 3,
-    zIndex: 10,
-  },
-
-  // Sub-flows, Files & Costs
+  // Flows layout
   subFlowRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 10,
+    paddingVertical: 8,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#F5F5F5",
-  },
-  fileRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
-  },
-  costItem: {
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
+    borderBottomColor: "#F1F5F9",
   },
 
-  // Attachments
+  // Attachments layout
   attachmentHeaderRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
+    padding: 12,
   },
-  uploadBtn: {
-    borderRadius: 6,
-    borderColor: "#D0D3D4",
-  },
-  attachmentScroll: {
-    paddingVertical: 8,
-  },
+  uploadBtn: { borderRadius: 6 },
+  attachmentScroll: { marginTop: 4 },
   attachmentCard: {
-    width: 260,
+    width: 220,
     backgroundColor: "#FAFAFA",
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#E5E8E8",
-    padding: 12,
-    marginRight: 12,
+    borderColor: "#EEEEEE",
+    padding: 10,
+    marginRight: 10,
   },
   attachmentCardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 6,
   },
-  rowAlignFlex: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  actionIconBtn: {
-    margin: 0,
-    padding: 0,
-    width: 22,
-    height: 22,
-  },
-  attachmentMetaDetails: {
-    paddingLeft: 22,
-    gap: 2,
-  },
-  metaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  metaIcon: {
-    margin: 0,
-    padding: 0,
-    width: 14,
-    height: 14,
-  },
-  metaText: {
-    fontSize: 11,
-    color: "#777",
-    marginLeft: 4,
+  actionIconBtn: { margin: 0, padding: 0, width: 24, height: 24 },
+  attachmentMetaDetails: { marginTop: 8, gap: 2 },
+  metaRow: { flexDirection: "row", alignItems: "center" },
+  metaIcon: { margin: 0, padding: 0, width: 14, height: 14 },
+  metaText: { fontSize: 11, color: "#666", marginLeft: 2 },
+
+  // Cost tracking layout
+  costItem: {
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
   },
 });
