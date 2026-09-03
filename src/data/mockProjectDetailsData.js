@@ -97,9 +97,9 @@ export const MOCK_PROJECT_DETAILS = {
   flows: [
     {
       id: "1",
-      title: "1 Survey & Design",
+      title: "Survey & Design",
       progress: "53%",
-      status: "Not Started",
+      status: "In Progress",
       children: [
         {
           id: "1.1",
@@ -123,9 +123,9 @@ export const MOCK_PROJECT_DETAILS = {
     },
     {
       id: "2",
-      title: "2 Material Procurement",
+      title: "Material Procurement",
       progress: "0%",
-      status: "Not Started",
+      status: "Blocked",
       children: [
         {
           id: "2.1",
@@ -142,6 +142,58 @@ export const MOCK_PROJECT_DETAILS = {
         {
           id: "2.3",
           title: "2.3 Switchgear & Accessories",
+          progress: "0%",
+          status: "Not Started",
+        },
+      ],
+    },
+    {
+      id: "3",
+      title: "Civil Works",
+      progress: "80%",
+      status: "In Progress",
+      children: [
+        {
+          id: "3.1",
+          title: "Foundations & Structures",
+          progress: "85%",
+          status: "In Progress",
+        },
+        {
+          id: "3.2",
+          title: "Cable Ducts & Trenches",
+          progress: "100%",
+          status: "Completed",
+        },
+        {
+          id: "3.3",
+          title: "Fencing & Site Works",
+          progress: "45%",
+          status: "Not Started",
+        },
+      ],
+    },
+    {
+      id: "4",
+      title: "Electrical Installation",
+      progress: "58%",
+      status: "In Progress",
+      children: [
+        {
+          id: "4.1",
+          title: "Cable / Conductor Laying",
+          progress: "50%",
+          status: "In Progress",
+        },
+        {
+          id: "4.2",
+          title: "Switchgear / Transformer Installation",
+          progress: "100%",
+          status: "Completed",
+        },
+        {
+          id: "4.3",
+          title: "Protection & Control Wiring",
           progress: "0%",
           status: "Not Started",
         },

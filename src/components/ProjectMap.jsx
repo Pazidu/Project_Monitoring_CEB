@@ -433,7 +433,7 @@ export const ProjectMap = ({
                   activeDrawTool === "edit" && styles.activeActionText,
                 ]}
               >
-                Edit Layer
+                {/* {edit layer} */}
               </Text>
             </TouchableOpacity>
 
@@ -457,7 +457,7 @@ export const ProjectMap = ({
                   activeDrawTool === "delete" && styles.activeDeleteText,
                 ]}
               >
-                Delete Layer
+                {/* {delete layer} */}
               </Text>
             </TouchableOpacity>
 
@@ -472,7 +472,7 @@ export const ProjectMap = ({
                 iconColor="#444"
                 style={styles.noMarginIcon}
               />
-              <Text style={styles.mapActionText}>Save Layers</Text>
+              <Text style={styles.mapActionText}>{/* {save layers} */}</Text>
             </TouchableOpacity>
           </ScrollView>
 
