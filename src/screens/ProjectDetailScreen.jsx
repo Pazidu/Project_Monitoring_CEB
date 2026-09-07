@@ -46,7 +46,7 @@ export const ProjectDetailScreen = ({ route }) => {
   const [isDetailsModalVisible, setIsDetailsModalVisible] = useState(false);
   const [healthModalVisible, setHealthModalVisible] = useState(false);
   const [currentHealthStatus, setCurrentHealthStatus] = useState(
-    project.status || "On Hold",
+    project?.status || "On Hold",
   );
 
   // 1. Load saved project details & flow order from AsyncStorage when screen mounts
@@ -63,20 +63,17 @@ export const ProjectDetailScreen = ({ route }) => {
         setProject((prev) => {
           let updated = { ...prev };
           if (storedDetails) {
-            updated = { ...updated, ...JSON.parse(storedDetails) };
+            const parsedDetails = JSON.parse(storedDetails);
+            updated = { ...updated, ...parsedDetails };
+            if (parsedDetails.status) {
+              setCurrentHealthStatus(parsedDetails.status);
+            }
           }
           if (storedFlows) {
             updated.flows = JSON.parse(storedFlows);
           }
           return updated;
         });
-
-        if (storedDetails) {
-          const parsedDetails = JSON.parse(storedDetails);
-          if (parsedDetails.status) {
-            setCurrentHealthStatus(parsedDetails.status);
-          }
-        }
       } catch (error) {
         console.error("Failed to load project data from AsyncStorage:", error);
       }
@@ -168,7 +165,7 @@ export const ProjectDetailScreen = ({ route }) => {
   };
 
   const currentChipColors = getStatusColor(
-    project.status || currentHealthStatus,
+    project?.status || currentHealthStatus,
   );
 
   const tabs = [
@@ -193,17 +190,17 @@ export const ProjectDetailScreen = ({ route }) => {
           <View style={styles.topInfoRow}>
             <View style={styles.titleContainer}>
               <Text variant="titleMedium" style={styles.boldTitle}>
-                {project.title}
+                {project?.title}
               </Text>
             </View>
           </View>
           <View style={styles.topInfoRow}>
             <View>
               <Text variant="bodySmall" style={styles.subtitleText}>
-                {project.code}
+                {project?.code}
               </Text>
               <Text variant="bodySmall" style={styles.subtitleText}>
-                {project.category}
+                {project?.category}
               </Text>
             </View>
 
@@ -217,7 +214,7 @@ export const ProjectDetailScreen = ({ route }) => {
                 style={{ backgroundColor: currentChipColors.bg }}
                 textColor={currentChipColors.text}
               >
-                {project.status || currentHealthStatus}
+                {project?.status || currentHealthStatus}
               </Chip>
             </TouchableOpacity>
           </View>
@@ -262,7 +259,7 @@ export const ProjectDetailScreen = ({ route }) => {
         <UpdateProjectHealthStatusModal
           visible={healthModalVisible}
           onDismiss={() => setHealthModalVisible(false)}
-          currentStatus={project.status || currentHealthStatus}
+          currentStatus={project?.status || currentHealthStatus}
           onUpdateStatus={handleUpdateHealthStatus}
         />
 
@@ -332,7 +329,7 @@ export const ProjectDetailScreen = ({ route }) => {
                 style={styles.subText}
                 numberOfLines={1}
               >
-                LKR {metrics.spentLkr} spent
+                LKR {metrics.spentLkr || "0"} spent
               </Text>
             </Card.Content>
           </Card>
@@ -359,14 +356,14 @@ export const ProjectDetailScreen = ({ route }) => {
                 style={[styles.boldText, styles.metricValue]}
                 numberOfLines={1}
               >
-                {metrics.organization?.name}
+                {metrics.organization?.name || "N/A"}
               </Text>
               <Text
                 variant="labelSmall"
                 style={styles.subText}
                 numberOfLines={1}
               >
-                {metrics.organization?.location}
+                {metrics.organization?.location || "N/A"}
               </Text>
             </Card.Content>
           </Card>
@@ -385,7 +382,7 @@ export const ProjectDetailScreen = ({ route }) => {
                       { color: "#0F172A", marginTop: 2 },
                     ]}
                   >
-                    LKR {metrics.budget?.estimatedLkr}
+                    LKR {metrics.budget?.estimatedLkr || "0"}
                   </Text>
                 </View>
                 <IconButton
@@ -400,7 +397,7 @@ export const ProjectDetailScreen = ({ route }) => {
                 <Text variant="labelSmall" style={styles.subText}>
                   Actual:{" "}
                   <Text style={{ fontWeight: "600", color: "#334155" }}>
-                    LKR {metrics.budget?.actualLkr}
+                    LKR {metrics.budget?.actualLkr || "0"}
                   </Text>
                 </Text>
               </View>
@@ -480,7 +477,7 @@ export const ProjectDetailScreen = ({ route }) => {
             <View style={styles.tabContentContainer}>
               {activeTab === "Description" && (
                 <Text variant="bodyMedium" style={styles.contentText}>
-                  {overview.description}
+                  {overview.description || "No description provided."}
                 </Text>
               )}
 
@@ -518,12 +515,12 @@ export const ProjectDetailScreen = ({ route }) => {
                         size={36}
                         icon="account-outline"
                         style={{
-                          backgroundColor: sh.title.includes("Director")
+                          backgroundColor: sh.title?.includes("Director")
                             ? "#E8F8F5"
                             : "#FEF9E7",
                         }}
                         color={
-                          sh.title.includes("Director") ? "#117A65" : "#D68910"
+                          sh.title?.includes("Director") ? "#117A65" : "#D68910"
                         }
                       />
                       <View style={{ flex: 1, marginLeft: 10 }}>
@@ -585,11 +582,12 @@ export const ProjectDetailScreen = ({ route }) => {
           setIsMapFullscreen={setIsMapFullscreen}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
+          activeStageId={null}
         />
 
         {/* SEPARATED PROJECT FLOWS COMPONENT */}
         <ProjectFlows
-          flows={project.flows || []}
+          flows={project?.flows || []}
           setFlows={(updatedFlows) =>
             setProject((prev) => ({ ...prev, flows: updatedFlows }))
           }
@@ -610,7 +608,7 @@ export const ProjectDetailScreen = ({ route }) => {
                 variant="titleMedium"
                 style={[styles.boldText, { marginLeft: 6 }]}
               >
-                Attachments ({project.attachments?.length || 0})
+                Attachments ({project?.attachments?.length || 0})
               </Text>
             </View>
             <Button
@@ -630,8 +628,8 @@ export const ProjectDetailScreen = ({ route }) => {
               showsHorizontalScrollIndicator={false}
               style={styles.attachmentScroll}
             >
-              {project.attachments?.map((file) => (
-                <View key={file.id} style={styles.attachmentCard}>
+              {project?.attachments?.map((file, index) => (
+                <View key={file.id || index} style={styles.attachmentCard}>
                   <View style={styles.attachmentCardHeader}>
                     <View style={styles.rowAlignFlex}>
                       <IconButton
@@ -701,8 +699,8 @@ export const ProjectDetailScreen = ({ route }) => {
         <Card style={[styles.cardMargin, { marginBottom: 32 }]}>
           <Card.Title title="Cost Tracking" titleStyle={styles.boldText} />
           <Card.Content>
-            {project.costs?.map((cost) => (
-              <View key={cost.id} style={styles.costItem}>
+            {project?.costs?.map((cost, index) => (
+              <View key={cost.id || index} style={styles.costItem}>
                 <View style={styles.rowBetween}>
                   <Text variant="bodySmall" style={{ opacity: 0.6 }}>
                     {cost.date} · {cost.category}

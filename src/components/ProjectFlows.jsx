@@ -15,6 +15,8 @@ import {
 
 import { CreateFlowModal } from "./CreateFlowModal";
 import { EditFlowModal } from "./EditFlowModal";
+import { CreateSubFlowModal } from "./CreateSubFlowModal";
+import { FlowMapModal } from "./FlowMapModal";
 
 // ==========================================
 // Main ProjectFlows Component
@@ -60,6 +62,94 @@ export const ProjectFlows = ({
       onSaveFlows(updatedFlows);
     }
     setIsCreateModalVisible(false);
+  };
+
+  // Add new sub-flow handler
+  const [isSubFlowModalVisible, setIsSubFlowModalVisible] = useState(false);
+  const [selectedParentFlow, setSelectedParentFlow] = useState(null);
+
+  const handleOpenCreateSubFlow = (flowItem) => {
+    setSelectedParentFlow(flowItem);
+    setIsSubFlowModalVisible(true);
+  };
+
+  const handleSaveNewSubFlow = (subFlowData) => {
+    if (!selectedParentFlow) return;
+
+    const addSubFlowRecursively = (list) => {
+      return list.map((item) => {
+        if (item.id === selectedParentFlow.id) {
+          const updatedChildren = [...(item.children || []), subFlowData];
+          return { ...item, children: updatedChildren };
+        }
+        if (item.children && item.children.length > 0) {
+          return { ...item, children: addSubFlowRecursively(item.children) };
+        }
+        return item;
+      });
+    };
+
+    const updatedFlows = addSubFlowRecursively(flows);
+    setFlows(updatedFlows);
+
+    // Auto-expand parent so new subflow is visible
+    setExpandedFlows((prev) => ({
+      ...prev,
+      [selectedParentFlow.id]: true,
+    }));
+
+    if (onSaveFlows) onSaveFlows(updatedFlows);
+    setIsSubFlowModalVisible(false);
+    setSelectedParentFlow(null);
+  };
+
+  // 1. State for Map Modal
+  const [isMapModalVisible, setIsMapModalVisible] = useState(false);
+  const [selectedMapFlow, setSelectedMapFlow] = useState(null);
+
+  const handleOpenMap = (flowItem, numberTag) => {
+    setSelectedMapFlow({
+      ...flowItem,
+      flowCode: numberTag || flowItem.code || "1",
+    });
+    setIsMapModalVisible(true);
+  };
+
+  // 2. Handler to recursively update and persist drawings into state
+  const handleSaveDrawings = (flowId, newDrawings) => {
+    const updateDrawingsRecursively = (list) => {
+      return list.map((item) => {
+        if (item.id === flowId) {
+          return { ...item, drawings: newDrawings };
+        }
+        if (item.children && item.children.length > 0) {
+          return {
+            ...item,
+            children: updateDrawingsRecursively(item.children),
+          };
+        }
+        return item;
+      });
+    };
+
+    const updatedFlows = updateDrawingsRecursively(flows);
+    setFlows(updatedFlows);
+
+    // Sync selected target item so counts update live in UI header
+    if (selectedMapFlow && selectedMapFlow.id === flowId) {
+      setSelectedMapFlow((prev) => ({
+        ...prev,
+        drawings: newDrawings,
+      }));
+    }
+
+    if (onSaveFlows) {
+      onSaveFlows(updatedFlows);
+    }
+  };
+
+  const handleClearDrawings = (flowId) => {
+    handleSaveDrawings(flowId, []);
   };
 
   // Save changes from Edit Modal
@@ -384,6 +474,7 @@ export const ProjectFlows = ({
                 <TouchableOpacity
                   style={flowStyles.iconActionBtn}
                   activeOpacity={0.6}
+                  onPress={() => handleOpenMap(item, numberTag)}
                 >
                   <IconButton
                     icon="map-marker-outline"
@@ -416,9 +507,11 @@ export const ProjectFlows = ({
                   />
                 </TouchableOpacity>
 
+                {/* Sub-flow Creation Trigger Button */}
                 <TouchableOpacity
                   style={flowStyles.iconActionBtn}
                   activeOpacity={0.6}
+                  onPress={() => handleOpenCreateSubFlow(item)}
                 >
                   <IconButton
                     icon="sitemap-outline"
@@ -452,9 +545,6 @@ export const ProjectFlows = ({
         <View style={flowStyles.cardHeader}>
           <View>
             <Text style={flowStyles.headerTitle}>Project Flows</Text>
-            {/* <Text style={flowStyles.headerSubtitle}>
-              {flows.length} main {flows.length === 1 ? "flow" : "flows"}
-            </Text> */}
           </View>
           <TouchableOpacity
             activeOpacity={0.85}
@@ -485,6 +575,25 @@ export const ProjectFlows = ({
         onDismiss={() => setEditingFlow(null)}
         onSave={handleUpdateFlow}
         onDelete={handleDeleteFlow}
+      />
+
+      {/* Sub-Flow Modal Component */}
+      <CreateSubFlowModal
+        visible={isSubFlowModalVisible}
+        parentFlow={selectedParentFlow}
+        onDismiss={() => setIsSubFlowModalVisible(false)}
+        onCreateSubFlow={handleSaveNewSubFlow}
+      />
+
+      <FlowMapModal
+        visible={isMapModalVisible}
+        flowData={selectedMapFlow}
+        onDismiss={() => {
+          setIsMapModalVisible(false);
+          setSelectedMapFlow(null);
+        }}
+        onSaveDrawings={handleSaveDrawings}
+        onClearDrawings={handleClearDrawings}
       />
     </GestureHandlerRootView>
   );
