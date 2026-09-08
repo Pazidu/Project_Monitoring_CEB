@@ -114,6 +114,21 @@ export const FlowMapModal = ({
           .leaflet-pm-toolbar .leaflet-buttons-container a { width: 32px !important; height: 32px !important; line-height: 32px !important; border-bottom: 1px solid #F1F5F9 !important; }
           .leaflet-control-zoom { border: none !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important; border-radius: 8px !important; }
           .leaflet-control-zoom a { width: 32px !important; height: 32px !important; line-height: 32px !important; color: #334155 !important; }
+          
+          /* Flow Code Tag Styling */
+          .flow-code-tag {
+            background-color: #0F172A !important;
+            color: #FFFFFF !important;
+            font-weight: 700 !important;
+            font-size: 11px !important;
+            padding: 2px 6px !important;
+            border-radius: 4px !important;
+            border: 1px solid #2563EB !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25) !important;
+          }
+          .flow-code-tag::before {
+            display: none !important; /* Hide default leaflet tooltip arrow pointer */
+          }
         </style>
       </head>
       <body>
@@ -151,6 +166,15 @@ export const FlowMapModal = ({
           const THEME_COLOR = '#7C3AED';
           const THEME_FILL_COLOR = '#8B5CF6';
 
+          function attachTagTooltip(layer, code) {
+            if (!code) return;
+            layer.bindTooltip('#' + code, {
+              permanent: true,
+              direction: 'center',
+              className: 'flow-code-tag'
+            });
+          }
+
           function createCircleLayer(lat, lng, radius, featureId) {
             var circle = L.circle([lat, lng], {
               radius: Number(radius) || 100,
@@ -162,6 +186,7 @@ export const FlowMapModal = ({
             circle.options.isCircle = true;
             circle.options.radius = Number(radius) || 100;
             circle.featureId = featureId || generateUUID();
+            attachTagTooltip(circle, STAGE_CODE);
             return circle;
           }
 
@@ -205,6 +230,7 @@ export const FlowMapModal = ({
                   stageId: STAGE_ID,
                   flowId: STAGE_ID,
                   stageCode: STAGE_CODE,
+                  tagLabel: '#' + STAGE_CODE,
                   updatedAt: new Date().toISOString()
                 });
                 geoJsonData.push(geoJson);
@@ -223,6 +249,7 @@ export const FlowMapModal = ({
             if (!feature || !feature.geometry) return;
             var props = feature.properties || {};
             var featureId = feature.id || props.id || generateUUID();
+            var codeToDisplay = props.stageCode || STAGE_CODE;
 
             if ((props.isCircle || props.radius || props.shape === 'Circle') && feature.geometry.type === 'Point') {
               var coords = feature.geometry.coordinates;
@@ -238,6 +265,7 @@ export const FlowMapModal = ({
               });
               var polyline = L.polyline(coordinates, { color: THEME_COLOR, weight: 4, opacity: 0.85 });
               polyline.featureId = featureId;
+              attachTagTooltip(polyline, codeToDisplay);
               drawnItems.addLayer(polyline);
               attachLayerEvents(polyline);
               return;
@@ -253,12 +281,14 @@ export const FlowMapModal = ({
                 }
                 var marker = L.marker(latlng);
                 marker.featureId = featureId;
+                attachTagTooltip(marker, codeToDisplay);
                 return marker;
               }
             });
 
             geoLayer.eachLayer(function(l) {
               l.featureId = featureId;
+              attachTagTooltip(l, codeToDisplay);
               drawnItems.addLayer(l);
               attachLayerEvents(l);
             });
@@ -298,6 +328,7 @@ export const FlowMapModal = ({
                   weight: 3
                 });
               }
+              attachTagTooltip(layer, STAGE_CODE);
             }
 
             drawnItems.addLayer(layer);

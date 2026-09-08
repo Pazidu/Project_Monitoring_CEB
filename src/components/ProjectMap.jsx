@@ -113,6 +113,7 @@ export const ProjectMap = ({
         if (activeStageId !== null && activeStageId !== undefined) {
           feature.properties = feature.properties || {};
           feature.properties.stageId = activeStageId;
+          feature.properties.stageCode = activeStageId;
         }
         await DrawingStore.add(feature);
       } else if (data.type === "DRAWINGS_EDITED") {
@@ -146,9 +147,25 @@ export const ProjectMap = ({
       <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
       <style>
-        body, html, #map { margin: 0; padding: 0; height: 100%; width: 100%; background: #e5e3df; }
+        body, html, #map { margin: 0; padding: 0; height: 100%; width: 100%; background: #e5e3df; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         .leaflet-draw-toolbar a { background-color: #ffffff !important; }
         .leaflet-top.leaflet-left { top: 55px !important; }
+        
+        .stage-tag-tooltip {
+          background-color: #0F172A !important;
+          color: #FFFFFF !important;
+          font-weight: 700 !important;
+          font-size: 11px !important;
+          padding: 2px 6px !important;
+          border-radius: 4px !important;
+          border: 1px solid #2563EB !important;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+          white-space: nowrap !important;
+          pointer-events: none !important;
+        }
+        .stage-tag-tooltip::before {
+          display: none !important;
+        }
       </style>
     </head>
     <body>
@@ -176,20 +193,31 @@ export const ProjectMap = ({
 
       var drawControl = new L.Control.Draw({
         position: 'topleft',
-        draw: {
-          polyline: { shapeOptions: { color: '#2563EB', weight: 3 } },
-          polygon: { shapeOptions: { color: '#2563EB', fillColor: '#3B82F6', fillOpacity: 0.35, weight: 3 } },
-          circle: { shapeOptions: { color: '#2563EB', fillColor: '#3B82F6', fillOpacity: 0.35, weight: 3 } },
-          rectangle: { shapeOptions: { color: '#2563EB', fillColor: '#3B82F6', fillOpacity: 0.35, weight: 3 } },
-          marker: true,
-          circlemarker: false
-        },
+        draw: false,
         edit: {
           featureGroup: drawnItems,
           remove: true
         }
       });
       map.addControl(drawControl);
+
+      function attachTooltipToLayer(layer, tagCode) {
+        if (!tagCode || tagCode === 'null' || tagCode === 'undefined') return;
+        var label = String(tagCode).startsWith('#') ? tagCode : '#' + tagCode;
+
+        if (layer.eachLayer && typeof layer.eachLayer === 'function') {
+          layer.eachLayer(function(subLayer) {
+            attachTooltipToLayer(subLayer, tagCode);
+          });
+        } else if (layer.bindTooltip) {
+          layer.unbindTooltip();
+          layer.bindTooltip(label, {
+            permanent: true,
+            direction: 'center',
+            className: 'stage-tag-tooltip'
+          }).openTooltip();
+        }
+      }
 
       function layerToGeoJSON(layer) {
         var featureId = layer.featureId || (layer.feature && layer.feature.id) || (layer.feature && layer.feature.properties && layer.feature.properties.id) || generateUUID();
@@ -225,9 +253,19 @@ export const ProjectMap = ({
         var layer = e.layer;
         var featureId = generateUUID();
         layer.featureId = featureId;
-        
+
+        var activeStage = ${JSON.stringify(activeStageId)};
+
         drawnItems.addLayer(layer);
         var geojson = layerToGeoJSON(layer);
+        
+        if (activeStage) {
+          geojson.properties = geojson.properties || {};
+          geojson.properties.stageId = activeStage;
+          geojson.properties.stageCode = activeStage;
+          attachTooltipToLayer(layer, activeStage);
+        }
+
         sendToRN('DRAWING_CREATED', { feature: geojson });
       });
 
@@ -285,6 +323,8 @@ export const ProjectMap = ({
             feature.id = featureId;
             props.id = featureId;
 
+            var tagCode = props.stageCode || props.stageId || filterStageId;
+
             var geom = feature.geometry || {};
             var type = geom.type;
             var isCircleFlag = props.isCircle || props.type === 'circle' || props.shapeType === 'Circle' || props.radius;
@@ -323,15 +363,8 @@ export const ProjectMap = ({
               layerCreated.featureId = featureId;
               layerCreated.feature = feature;
 
-              if (layerCreated.eachLayer) {
-                layerCreated.eachLayer(function(childLayer) {
-                  childLayer.featureId = featureId;
-                  childLayer.feature = feature;
-                  drawnItems.addLayer(childLayer);
-                });
-              } else {
-                drawnItems.addLayer(layerCreated);
-              }
+              drawnItems.addLayer(layerCreated);
+              attachTooltipToLayer(layerCreated, tagCode);
             }
           });
 
@@ -401,6 +434,7 @@ export const ProjectMap = ({
         mixContentMode="always"
       />
 
+      {/* Top Controls Bar */}
       <View style={styles.mapTopControlsOverlay}>
         <View style={styles.topControlRow}>
           {isMapFullscreen && (
@@ -452,7 +486,8 @@ export const ProjectMap = ({
         </View>
       </View>
 
-      <View style={styles.leftToolsContainer}>
+      {/* Right Tools Container (Zoom Controls directly under Fullscreen button) */}
+      <View style={styles.rightToolsContainer}>
         <View style={styles.toolGroup}>
           <TouchableOpacity
             style={styles.toolBtn}
@@ -470,6 +505,7 @@ export const ProjectMap = ({
         </View>
       </View>
 
+      {/* Recenter Button */}
       <TouchableOpacity style={styles.recenterBtn} onPress={handleRecenter}>
         <IconButton
           icon="crosshairs-gps"
@@ -545,7 +581,13 @@ const styles = StyleSheet.create({
     padding: 6,
     elevation: 3,
   },
-  leftToolsContainer: { position: "absolute", top: 310, left: 10, zIndex: 10 },
+  /* Positioned under top-right controls */
+  rightToolsContainer: {
+    position: "absolute",
+    top: 54,
+    right: 10,
+    zIndex: 10,
+  },
   toolGroup: {
     backgroundColor: "#FFF",
     borderRadius: 8,
