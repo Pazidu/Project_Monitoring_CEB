@@ -1,13 +1,11 @@
-// ProjectMap.jsx
+// components/ProjectMap.jsx
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import {
   View,
-  ScrollView,
   StyleSheet,
   TouchableOpacity,
   Modal,
   StatusBar,
-  Alert,
 } from "react-native";
 import { Text, Card, IconButton, TextInput } from "react-native-paper";
 import { WebView } from "react-native-webview";
@@ -21,31 +19,29 @@ export const ProjectMap = ({
   activeStageId = null,
 }) => {
   const webViewRef = useRef(null);
-  const [activeDrawTool, setActiveDrawTool] = useState(null);
   const [allDrawings, setAllDrawings] = useState([]);
   const [isStoreReady, setIsStoreReady] = useState(false);
   const [isWebViewReady, setIsWebViewReady] = useState(false);
-  const [debugMsg, setDebugMsg] = useState("Initializing...");
+  const isLocalActionRef = useRef(false);
 
   const INITIAL_CENTER = [7.8731, 80.7718];
   const INITIAL_ZOOM = 8;
 
-  // 1. Initialize Store & Subscribe
   useEffect(() => {
     let isMounted = true;
-    DrawingStore.init().then((data) => {
+
+    const loadStore = async () => {
+      const data = await DrawingStore.init();
       if (!isMounted) return;
-      const initialData = Array.isArray(data)
-        ? data
-        : DrawingStore.getAll() || [];
-      setAllDrawings(initialData);
+      setAllDrawings(data || []);
       setIsStoreReady(true);
-      setDebugMsg(`Store Ready: ${initialData.length} items`);
-    });
+    };
+
+    loadStore();
 
     const unsubscribe = DrawingStore.subscribe((updated) => {
       if (isMounted) {
-        setAllDrawings([...(updated || [])]);
+        setAllDrawings(updated || []);
       }
     });
 
@@ -55,23 +51,35 @@ export const ProjectMap = ({
     };
   }, []);
 
-  // 2. Post Message to WebView
+  useEffect(() => {
+    setIsWebViewReady(false);
+  }, [isMapFullscreen]);
+
   const postMapAction = useCallback((type, payload = {}) => {
     if (webViewRef.current) {
       webViewRef.current.postMessage(JSON.stringify({ type, ...payload }));
     }
   }, []);
 
-  // 3. Sync drawings with WebView when ready
   useEffect(() => {
     if (isStoreReady && isWebViewReady) {
-      setDebugMsg(`Pushing ${allDrawings.length} features to map...`);
+      if (isLocalActionRef.current) {
+        isLocalActionRef.current = false;
+        return;
+      }
       postMapAction("SET_DRAWINGS", {
-        features: allDrawings,
+        rawStoreData: allDrawings,
         activeStageId: activeStageId,
       });
     }
-  }, [allDrawings, activeStageId, isStoreReady, isWebViewReady, postMapAction]);
+  }, [
+    allDrawings,
+    activeStageId,
+    isStoreReady,
+    isWebViewReady,
+    isMapFullscreen,
+    postMapAction,
+  ]);
 
   const handleRecenter = () => {
     postMapAction("RECENTER", {
@@ -87,68 +95,40 @@ export const ProjectMap = ({
     }
   };
 
-  const handleToggleDraw = (toolType) => {
-    if (activeDrawTool === toolType) {
-      setActiveDrawTool(null);
-      postMapAction("CANCEL_MODE");
-    } else {
-      setActiveDrawTool(toolType);
-      postMapAction("START_DRAW", { mode: toolType });
-    }
-  };
-
-  const handleToggleEdit = () => {
-    if (activeDrawTool === "edit") {
-      setActiveDrawTool(null);
-      postMapAction("CANCEL_MODE");
-    } else {
-      setActiveDrawTool("edit");
-      postMapAction("START_EDIT");
-    }
-  };
-
-  const handleToggleDelete = () => {
-    if (activeDrawTool === "delete") {
-      setActiveDrawTool(null);
-      postMapAction("CANCEL_MODE");
-    } else {
-      setActiveDrawTool("delete");
-      postMapAction("START_DELETE");
-    }
-  };
-
-  const handleSaveLayers = () => {
-    postMapAction("EXPORT_LAYERS");
-  };
-
   const handleWebViewMessage = async (event) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
 
       if (data.type === "MAP_READY") {
         setIsWebViewReady(true);
-        setDebugMsg("WebView Map Ready");
-      }
-
-      if (data.type === "LOG") {
-        setDebugMsg(`WV: ${data.message}`);
-      }
-
-      if (data.type === "MODE_CANCELLED") {
-        setActiveDrawTool(null);
-      }
-
-      if (data.type === "LAYERS_UPDATED" || data.type === "EXPORTED_LAYERS") {
-        const stageToSave = activeStageId || "default_global_stage";
-        const savedFeatures = data.geojson?.features || [];
-
-        await DrawingStore.addOrUpdateStageDrawings(stageToSave, savedFeatures);
-
-        if (data.type === "EXPORTED_LAYERS") {
-          Alert.alert(
-            "Saved",
-            `Saved ${savedFeatures.length} map features successfully.`,
-          );
+        setTimeout(() => {
+          postMapAction("SET_DRAWINGS", {
+            rawStoreData: DrawingStore.getAll(),
+            activeStageId: activeStageId,
+          });
+        }, 150);
+      } else if (data.type === "DRAWING_CREATED") {
+        isLocalActionRef.current = true;
+        const feature = data.feature;
+        if (activeStageId !== null && activeStageId !== undefined) {
+          feature.properties = feature.properties || {};
+          feature.properties.stageId = activeStageId;
+        }
+        await DrawingStore.add(feature);
+      } else if (data.type === "DRAWINGS_EDITED") {
+        isLocalActionRef.current = true;
+        const updatedFeatures = data.features || [];
+        for (const feature of updatedFeatures) {
+          const targetId = feature.id || feature.properties?.id;
+          if (targetId) {
+            await DrawingStore.update(targetId, feature);
+          }
+        }
+      } else if (data.type === "DRAWINGS_DELETED") {
+        isLocalActionRef.current = true;
+        const deletedIds = data.ids || [];
+        if (deletedIds.length > 0) {
+          await DrawingStore.deleteMultiple(deletedIds);
         }
       }
     } catch (err) {
@@ -157,282 +137,250 @@ export const ProjectMap = ({
   };
 
   const leafletHTML = `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
-        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
-        <style>
-          body, html, #map { margin: 0; padding: 0; height: 100%; width: 100%; background: #e5e3df; }
-          .leaflet-draw { display: none !important; }
-        </style>
-      </head>
-      <body>
-        <div id="map"></div>
-        <script>
-        function sendToRN(type, payload) {
-          if (window.ReactNativeWebView) {
-            window.ReactNativeWebView.postMessage(JSON.stringify(Object.assign({ type: type }, payload || {})));
-          }
+  <!DOCTYPE html>
+  <html>
+    <head>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+      <style>
+        body, html, #map { margin: 0; padding: 0; height: 100%; width: 100%; background: #e5e3df; }
+        .leaflet-draw-toolbar a { background-color: #ffffff !important; }
+        .leaflet-top.leaflet-left { top: 55px !important; }
+      </style>
+    </head>
+    <body>
+      <div id="map"></div>
+      <script>
+      function sendToRN(type, payload) {
+        if (window.ReactNativeWebView) {
+          window.ReactNativeWebView.postMessage(JSON.stringify(Object.assign({ type: type }, payload || {})));
+        }
+      }
+
+      function generateUUID() {
+        return 'id-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+      }
+
+      var map = L.map('map', { zoomControl: false }).setView([${INITIAL_CENTER[0]}, ${INITIAL_CENTER[1]}], ${INITIAL_ZOOM});
+      
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap'
+      }).addTo(map);
+
+      var drawnItems = new L.FeatureGroup().addTo(map);
+      var searchMarker = null;
+
+      var drawControl = new L.Control.Draw({
+        position: 'topleft',
+        draw: {
+          polyline: { shapeOptions: { color: '#2563EB', weight: 3 } },
+          polygon: { shapeOptions: { color: '#2563EB', fillColor: '#3B82F6', fillOpacity: 0.35, weight: 3 } },
+          circle: { shapeOptions: { color: '#2563EB', fillColor: '#3B82F6', fillOpacity: 0.35, weight: 3 } },
+          rectangle: { shapeOptions: { color: '#2563EB', fillColor: '#3B82F6', fillOpacity: 0.35, weight: 3 } },
+          marker: true,
+          circlemarker: false
+        },
+        edit: {
+          featureGroup: drawnItems,
+          remove: true
+        }
+      });
+      map.addControl(drawControl);
+
+      function layerToGeoJSON(layer) {
+        var featureId = layer.featureId || (layer.feature && layer.feature.id) || (layer.feature && layer.feature.properties && layer.feature.properties.id) || generateUUID();
+        var geojson;
+
+        if (layer instanceof L.Circle) {
+          var latlng = layer.getLatLng();
+          geojson = {
+            type: "Feature",
+            id: featureId,
+            geometry: {
+              type: "Point",
+              coordinates: [latlng.lng, latlng.lat]
+            },
+            properties: {
+              id: featureId,
+              isCircle: true,
+              radius: layer.getRadius()
+            }
+          };
+        } else {
+          geojson = layer.toGeoJSON();
+          geojson.id = featureId;
+          geojson.properties = geojson.properties || {};
+          geojson.properties.id = featureId;
         }
 
-        function log(msg) {
-          sendToRN('LOG', { message: msg });
-        }
+        layer.featureId = featureId;
+        return geojson;
+      }
 
-        var map = L.map('map', { zoomControl: false }).setView([${INITIAL_CENTER[0]}, ${INITIAL_CENTER[1]}], ${INITIAL_ZOOM});
+      map.on(L.Draw.Event.CREATED, function (e) {
+        var layer = e.layer;
+        var featureId = generateUUID();
+        layer.featureId = featureId;
         
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19
-        }).addTo(map);
+        drawnItems.addLayer(layer);
+        var geojson = layerToGeoJSON(layer);
+        sendToRN('DRAWING_CREATED', { feature: geojson });
+      });
 
-        var drawnItems = new L.FeatureGroup();
-        map.addLayer(drawnItems);
-
-        var activeHandler = null;
-        var searchMarker = null;
-        var currentStageId = ${JSON.stringify(activeStageId)};
-
-        function renderGeoJSONFeatures(rawFeatures, filterStageId) {
-          try {
-            drawnItems.clearLayers();
-            if (!rawFeatures) {
-              log("No features received");
-              return;
-            }
-
-            // Standardize array structure
-            var featuresArray = [];
-            if (Array.isArray(rawFeatures)) {
-              featuresArray = rawFeatures;
-            } else if (rawFeatures.type === 'FeatureCollection' && Array.isArray(rawFeatures.features)) {
-              featuresArray = rawFeatures.features;
-            } else if (rawFeatures.type === 'Feature') {
-              featuresArray = [rawFeatures];
-            }
-
-            log("Received " + featuresArray.length + " raw items");
-
-            var count = 0;
-            featuresArray.forEach(function(item) {
-              if (!item) return;
-
-              var feature = item.type === 'Feature' ? item : (item.feature || item);
-              if (!feature || !feature.geometry) return;
-
-              var props = feature.properties || {};
-
-              // FIX: If filterStageId is null, undefined, or "all", SHOW EVERYTHING (Main Map Mode)
-              if (filterStageId !== null && filterStageId !== undefined && filterStageId !== 'all') {
-                if (props.stageId && String(props.stageId) !== String(filterStageId)) {
-                  return; // Skip this drawing only if viewing a specific stage
-                }
-              }
-
-              var geom = feature.geometry;
-              var coords = geom.coordinates;
-
-              // Fail-safe manual shape constructors (prevents L.geoJSON crash)
-              if (props.isCircle || props.type === 'circle') {
-                var centerLat = coords[1];
-                var centerLng = coords[0];
-                var radius = props.radius || 5000;
-                var circle = L.circle([centerLat, centerLng], {
-                  radius: radius,
-                  color: props.color || '#3498DB',
-                  fillColor: props.fillColor || '#3498DB',
-                  fillOpacity: 0.4
-                });
-                circle.feature = feature;
-                drawnItems.addLayer(circle);
-                count++;
-              }
-              else if (geom.type === 'LineString') {
-                var latLngs = coords.map(function(pt) { return [pt[1], pt[0]]; });
-                var polyline = L.polyline(latLngs, { color: props.color || '#9B59B6', weight: 5, opacity: 0.9 });
-                polyline.feature = feature;
-                drawnItems.addLayer(polyline);
-                count++;
-              }
-              else if (geom.type === 'Polygon') {
-                var polyCoords = coords[0].map(function(pt) { return [pt[1], pt[0]]; });
-                var polygon = L.polygon(polyCoords, { 
-                  color: props.color || '#E74C3C', 
-                  weight: 4, 
-                  opacity: 0.9, 
-                  fillColor: props.fillColor || '#E74C3C', 
-                  fillOpacity: 0.5 
-                });
-                polygon.feature = feature;
-                drawnItems.addLayer(polygon);
-                count++;
-              }
-              else if (geom.type === 'Point') {
-                var marker = L.circleMarker([coords[1], coords[0]], { radius: 8, color: '#2ECC71', fillColor: '#2ECC71', fillOpacity: 0.8 });
-                marker.feature = feature;
-                drawnItems.addLayer(marker);
-                count++;
-              }
-            });
-
-            log("Successfully drawn " + count + " layers on map");
-
-            if (drawnItems.getLayers().length > 0) {
-              setTimeout(function() {
-              try {
-                var bounds = drawnItems.getBounds();
-                if (bounds && bounds.isValid()) {
-                  map.fitBounds(bounds, { padding: [50, 50], maxZoom: 12, animate: true });
-                }
-              } catch(e) {
-                log("FitBounds error: " + e.message);
-              }
-            }, 300);
-          } 
-          } catch(err) {
-            log("Render Error: " + err.message);
-          }
-        }
-
-        function syncLayers(isExport) {
-          var targetStage = currentStageId || "default_global_stage";
-          var data = { type: "FeatureCollection", features: [] };
-
-          drawnItems.eachLayer(function(layer) {
-            var feature;
-            if (layer instanceof L.Circle && !(layer instanceof L.CircleMarker)) {
-              var latlng = layer.getLatLng();
-              feature = {
-                type: "Feature",
-                properties: {
-                  stageId: targetStage,
-                  isCircle: true,
-                  radius: layer.getRadius(),
-                  color: layer.options.color || '#3498DB',
-                  fillColor: layer.options.fillColor || '#3498DB'
-                },
-                geometry: {
-                  type: "Point",
-                  coordinates: [latlng.lng, latlng.lat]
-                }
-              };
-            } else if (typeof layer.toGeoJSON === 'function') {
-              feature = layer.toGeoJSON();
-              feature.properties = feature.properties || {};
-              feature.properties.stageId = targetStage;
-            }
-            if (feature) data.features.push(feature);
-          });
-          
-          sendToRN(isExport ? 'EXPORTED_LAYERS' : 'LAYERS_UPDATED', { geojson: data });
-        }
-
-        function stopActiveMode() {
-          if (activeHandler) {
-            if (typeof activeHandler.disable === 'function') {
-              activeHandler.disable();
-            }
-            activeHandler = null;
-          }
-        }
-
-        function handleNativeMessage(event) {
-          try {
-            var data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-            if (!data || !data.type) return;
-
-            if (data.type === 'RECENTER') {
-              map.flyTo([data.lat, data.lng], data.zoom, { animate: true });
-            } else if (data.type === 'ZOOM_IN') {
-              map.zoomIn();
-            } else if (data.type === 'ZOOM_OUT') {
-              map.zoomOut();
-            } else if (data.type === 'SEARCH') {
-              performSearch(data.query);
-            } else if (data.type === 'START_DRAW') {
-              startDrawingMode(data.mode);
-            } else if (data.type === 'START_EDIT') {
-              startEditMode();
-            } else if (data.type === 'START_DELETE') {
-              startDeleteMode();
-            } else if (data.type === 'CANCEL_MODE') {
-              stopActiveMode();
-            } else if (data.type === 'EXPORT_LAYERS') {
-              syncLayers(true);
-            } else if (data.type === 'SET_DRAWINGS') {
-              currentStageId = data.activeStageId;
-              renderGeoJSONFeatures(data.features, currentStageId);
-            }
-          } catch (err) {
-            log("Message Error: " + err.message);
-          }
-        }
-
-        document.addEventListener("message", handleNativeMessage);
-        window.addEventListener("message", handleNativeMessage);
-
-        function startDrawingMode(mode) {
-          stopActiveMode();
-          if (typeof L.Draw === 'undefined') {
-            log("L.Draw not loaded");
-            return;
-          }
-          switch (mode) {
-            case 'polyline': activeHandler = new L.Draw.Polyline(map, { shapeOptions: { color: '#9B59B6', weight: 5 } }); break;
-            case 'polygon': activeHandler = new L.Draw.Polygon(map, { shapeOptions: { color: '#E74C3C', fillColor: '#E74C3C', fillOpacity: 0.4 } }); break;
-            case 'circle': activeHandler = new L.Draw.Circle(map, { shapeOptions: { color: '#3498DB', fillColor: '#3498DB', fillOpacity: 0.4 } }); break;
-            case 'marker': activeHandler = new L.Draw.Marker(map); break;
-          }
-          if (activeHandler) activeHandler.enable();
-        }
-
-        function startEditMode() {
-          stopActiveMode();
-          if (typeof L.EditToolbar === 'undefined') return;
-          activeHandler = new L.EditToolbar.Edit(map, { featureGroup: drawnItems });
-          activeHandler.enable();
-        }
-
-        function startDeleteMode() {
-          stopActiveMode();
-          if (typeof L.EditToolbar === 'undefined') return;
-          activeHandler = new L.EditToolbar.Delete(map, { featureGroup: drawnItems });
-          activeHandler.enable();
-        }
-
-        map.on(L.Draw.Event.CREATED, function (e) {
-          var layer = e.layer;
-          drawnItems.addLayer(layer);
-          stopActiveMode();
-          sendToRN('MODE_CANCELLED');
-          syncLayers(false);
+      map.on(L.Draw.Event.EDITED, function (e) {
+        var layers = e.layers;
+        var editedFeatures = [];
+        layers.eachLayer(function (layer) {
+          editedFeatures.push(layerToGeoJSON(layer));
         });
+        sendToRN('DRAWINGS_EDITED', { features: editedFeatures });
+      });
 
-        map.on(L.Draw.Event.EDITED, function() { syncLayers(false); });
-        map.on(L.Draw.Event.DELETED, function() { syncLayers(false); });
-
-        function performSearch(query) {
-          fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query))
-            .then(function(res) { return res.json(); })
-            .then(function(results) {
-              if (results && results.length > 0) {
-                var lat = parseFloat(results[0].lat);
-                var lon = parseFloat(results[0].lon);
-                if (searchMarker) map.removeLayer(searchMarker);
-                searchMarker = L.marker([lat, lon]).addTo(map);
-                map.flyTo([lat, lon], 13);
-              }
-            });
+      map.on(L.Draw.Event.DELETED, function (e) {
+        var layers = e.layers;
+        var deletedIds = [];
+        layers.eachLayer(function (layer) {
+          var id = layer.featureId || (layer.feature && layer.feature.id) || (layer.feature && layer.feature.properties && layer.feature.properties.id);
+          if (id !== undefined && id !== null && id !== '') {
+            deletedIds.push(String(id));
+          }
+        });
+        if (deletedIds.length > 0) {
+          sendToRN('DRAWINGS_DELETED', { ids: deletedIds });
         }
+      });
 
-        sendToRN('MAP_READY');
-        </script>
-      </body>
-    </html>
-  `;
+      function createCircleLayer(lat, lng, radius, id) {
+        var circle = L.circle([lat, lng], {
+          radius: Number(radius) || 100,
+          color: '#2563EB',
+          fillColor: '#3B82F6',
+          fillOpacity: 0.35,
+          weight: 3
+        });
+        if (id) circle.featureId = id;
+        return circle;
+      }
+
+      function renderGeoJSONFeatures(features, filterStageId) {
+        try {
+          drawnItems.clearLayers();
+          if (!Array.isArray(features) || features.length === 0) return;
+
+          features.forEach(function(feature) {
+            if (!feature) return;
+            var props = feature.properties || {};
+
+            if (filterStageId !== null && filterStageId !== undefined && filterStageId !== 'all') {
+              if (props.stageId && String(props.stageId) !== String(filterStageId)) {
+                return;
+              }
+            }
+
+            var featureId = String(feature.id || props.id || generateUUID());
+            feature.id = featureId;
+            props.id = featureId;
+
+            var geom = feature.geometry || {};
+            var type = geom.type;
+            var isCircleFlag = props.isCircle || props.type === 'circle' || props.shapeType === 'Circle' || props.radius;
+
+            var layerCreated;
+
+            if (type === 'Point' && isCircleFlag) {
+              var coords = geom.coordinates;
+              if (coords && coords.length >= 2) {
+                layerCreated = createCircleLayer(coords[1], coords[0], props.radius, featureId);
+              }
+            } else if (props.radius && (props.latlng || (props.lat && props.lng))) {
+              var centerLat = props.latlng ? props.latlng.lat : props.lat;
+              var centerLng = props.latlng ? props.latlng.lng : props.lng;
+              layerCreated = createCircleLayer(centerLat, centerLng, props.radius, featureId);
+            } else {
+              layerCreated = L.geoJSON(feature, {
+                style: function() {
+                  return {
+                    color: '#2563EB',
+                    fillColor: '#3B82F6',
+                    weight: 3,
+                    opacity: 0.85,
+                    fillOpacity: 0.3
+                  };
+                },
+                pointToLayer: function(geoPoint, latlng) {
+                  var marker = L.marker(latlng);
+                  marker.featureId = featureId;
+                  return marker;
+                }
+              });
+            }
+
+            if (layerCreated) {
+              layerCreated.featureId = featureId;
+              layerCreated.feature = feature;
+
+              if (layerCreated.eachLayer) {
+                layerCreated.eachLayer(function(childLayer) {
+                  childLayer.featureId = featureId;
+                  childLayer.feature = feature;
+                  drawnItems.addLayer(childLayer);
+                });
+              } else {
+                drawnItems.addLayer(layerCreated);
+              }
+            }
+          });
+
+        } catch(err) {
+          console.error("Error rendering features:", err);
+        }
+      }
+
+      function handleNativeMessage(event) {
+        try {
+          var data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+          if (!data || !data.type) return;
+
+          if (data.type === 'RECENTER') {
+            map.flyTo([data.lat, data.lng], data.zoom, { animate: true });
+          } else if (data.type === 'ZOOM_IN') {
+            map.zoomIn();
+          } else if (data.type === 'ZOOM_OUT') {
+            map.zoomOut();
+          } else if (data.type === 'SEARCH') {
+            performSearch(data.query);
+          } else if (data.type === 'SET_DRAWINGS') {
+            renderGeoJSONFeatures(data.rawStoreData, data.activeStageId);
+          }
+        } catch (err) {}
+      }
+
+      document.addEventListener("message", handleNativeMessage);
+      window.addEventListener("message", handleNativeMessage);
+
+      function performSearch(query) {
+        fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query))
+          .then(function(res) { return res.json(); })
+          .then(function(results) {
+            if (results && results.length > 0) {
+              var lat = parseFloat(results[0].lat);
+              var lon = parseFloat(results[0].lon);
+              if (searchMarker) map.removeLayer(searchMarker);
+              searchMarker = L.marker([lat, lon]).addTo(map);
+              map.flyTo([lat, lon], 13);
+            }
+          });
+      }
+
+      sendToRN('MAP_READY');
+      </script>
+    </body>
+  </html>
+`;
 
   if (!isStoreReady) return null;
 
@@ -453,10 +401,6 @@ export const ProjectMap = ({
         mixContentMode="always"
       />
 
-      <View style={styles.debugBanner}>
-        <Text style={styles.debugText}>{debugMsg}</Text>
-      </View>
-
       <View style={styles.mapTopControlsOverlay}>
         <View style={styles.topControlRow}>
           {isMapFullscreen && (
@@ -473,74 +417,26 @@ export const ProjectMap = ({
             </TouchableOpacity>
           )}
 
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.topControlScrollContent}
-          >
-            <View style={styles.searchBarBox}>
-              <TouchableOpacity onPress={handleSearchSubmit}>
-                <IconButton
-                  icon="magnify"
-                  size={18}
-                  style={styles.noMarginIcon}
-                />
-              </TouchableOpacity>
-              <TextInput
-                placeholder="Search places"
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                onSubmitEditing={handleSearchSubmit}
-                returnKeyType="search"
-                style={styles.searchInput}
-                underlineColor="transparent"
-                activeUnderlineColor="transparent"
-                placeholderTextColor="#777"
-              />
-            </View>
-
-            <TouchableOpacity
-              style={[
-                styles.mapActionButton,
-                activeDrawTool === "edit" && styles.activeActionButton,
-              ]}
-              onPress={handleToggleEdit}
-            >
+          <View style={styles.searchBarBox}>
+            <TouchableOpacity onPress={handleSearchSubmit}>
               <IconButton
-                icon="pencil-outline"
-                size={16}
-                iconColor={activeDrawTool === "edit" ? "#3B82F6" : "#444"}
+                icon="magnify"
+                size={18}
                 style={styles.noMarginIcon}
               />
             </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.mapActionButton,
-                activeDrawTool === "delete" && styles.activeDeleteButton,
-              ]}
-              onPress={handleToggleDelete}
-            >
-              <IconButton
-                icon="trash-can-outline"
-                size={16}
-                iconColor={activeDrawTool === "delete" ? "#EF4444" : "#444"}
-                style={styles.noMarginIcon}
-              />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.mapActionButton}
-              onPress={handleSaveLayers}
-            >
-              <IconButton
-                icon="content-save-outline"
-                size={16}
-                iconColor="#444"
-                style={styles.noMarginIcon}
-              />
-            </TouchableOpacity>
-          </ScrollView>
+            <TextInput
+              placeholder="Search places"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              onSubmitEditing={handleSearchSubmit}
+              returnKeyType="search"
+              style={styles.searchInput}
+              underlineColor="transparent"
+              activeUnderlineColor="transparent"
+              placeholderTextColor="#777"
+            />
+          </View>
 
           <TouchableOpacity
             style={styles.fullscreenBtn}
@@ -572,36 +468,6 @@ export const ProjectMap = ({
             <Text style={styles.zoomText}>−</Text>
           </TouchableOpacity>
         </View>
-
-        <View style={[styles.toolGroup, { marginTop: 8 }]}>
-          {["polyline", "polygon", "circle", "marker"].map((tool, idx) => (
-            <React.Fragment key={tool}>
-              {idx > 0 && <View style={styles.toolDivider} />}
-              <TouchableOpacity
-                style={[
-                  styles.toolBtn,
-                  activeDrawTool === tool && styles.activeToolBtn,
-                ]}
-                onPress={() => handleToggleDraw(tool)}
-              >
-                <IconButton
-                  icon={
-                    tool === "polyline"
-                      ? "vector-polyline"
-                      : tool === "polygon"
-                        ? "hexagon-outline"
-                        : tool === "circle"
-                          ? "circle-outline"
-                          : "map-marker-outline"
-                  }
-                  size={16}
-                  iconColor={activeDrawTool === tool ? "#3B82F6" : "#333"}
-                  style={styles.noMarginIcon}
-                />
-              </TouchableOpacity>
-            </React.Fragment>
-          ))}
-        </View>
       </View>
 
       <TouchableOpacity style={styles.recenterBtn} onPress={handleRecenter}>
@@ -612,26 +478,13 @@ export const ProjectMap = ({
           style={styles.noMarginIcon}
         />
       </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.copyStoreBtn}
-        onPress={() => {
-          const data = JSON.stringify(DrawingStore.getAll(), null, 2);
-          console.log("=== DRAWING STORE DATA ===", data);
-          Alert.alert("Store JSON", data);
-        }}
-      >
-        <Text style={styles.copyBtnText}>SHOW STORE JSON</Text>
-      </TouchableOpacity>
     </View>
   );
 
   return (
     <>
       {!isMapFullscreen ? (
-        <Card style={[styles.cardMargin, { overflow: "hidden" }]}>
-          {renderMapBody()}
-        </Card>
+        <Card style={styles.cardMargin}>{renderMapBody()}</Card>
       ) : (
         <Modal
           visible={isMapFullscreen}
@@ -647,7 +500,7 @@ export const ProjectMap = ({
 };
 
 const styles = StyleSheet.create({
-  cardMargin: { marginBottom: 14, borderRadius: 8 },
+  cardMargin: { marginBottom: 14, borderRadius: 8, overflow: "hidden" },
   noMarginIcon: { margin: 0, padding: 0, width: 22, height: 22 },
   mapContainer: { height: 380, width: "100%", position: "relative" },
   fullscreenMapContainer: {
@@ -656,17 +509,6 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   mapWebView: { flex: 1 },
-  debugBanner: {
-    position: "absolute",
-    bottom: 4,
-    left: 10,
-    backgroundColor: "rgba(0,0,0,0.8)",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-    zIndex: 20,
-  },
-  debugText: { color: "#00FF00", fontSize: 10, fontFamily: "monospace" },
   mapTopControlsOverlay: {
     position: "absolute",
     top: 10,
@@ -675,11 +517,6 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   topControlRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  topControlScrollContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
   iconBackBtn: {
     backgroundColor: "#FFF",
     borderRadius: 8,
@@ -687,6 +524,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   searchBarBox: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#FFF",
@@ -694,7 +532,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     height: 36,
     elevation: 3,
-    minWidth: 160,
   },
   searchInput: {
     flex: 1,
@@ -702,32 +539,13 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     fontSize: 12,
   },
-  mapActionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFF",
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    height: 36,
-    elevation: 3,
-  },
-  activeActionButton: {
-    backgroundColor: "#EFF6FF",
-    borderColor: "#3B82F6",
-    borderWidth: 1,
-  },
-  activeDeleteButton: {
-    backgroundColor: "#FEF2F2",
-    borderColor: "#EF4444",
-    borderWidth: 1,
-  },
   fullscreenBtn: {
     backgroundColor: "#FFF",
     borderRadius: 8,
     padding: 6,
     elevation: 3,
   },
-  leftToolsContainer: { position: "absolute", top: 60, left: 10, zIndex: 10 },
+  leftToolsContainer: { position: "absolute", top: 310, left: 10, zIndex: 10 },
   toolGroup: {
     backgroundColor: "#FFF",
     borderRadius: 8,
@@ -740,7 +558,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  activeToolBtn: { backgroundColor: "#EFF6FF" },
   zoomText: { fontSize: 16, fontWeight: "bold", color: "#333" },
   toolDivider: { height: 1, backgroundColor: "#EEE" },
   recenterBtn: {
@@ -753,16 +570,4 @@ const styles = StyleSheet.create({
     elevation: 3,
     zIndex: 10,
   },
-  copyStoreBtn: {
-    position: "absolute",
-    bottom: 20,
-    left: 20,
-    backgroundColor: "#111827",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 6,
-    zIndex: 9999,
-    elevation: 10,
-  },
-  copyBtnText: { color: "#FFF", fontSize: 10, fontWeight: "bold" },
 });

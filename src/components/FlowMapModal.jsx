@@ -1,7 +1,9 @@
+// FlowMapModal.jsx
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { View, StyleSheet, Modal, TouchableOpacity, Alert } from "react-native";
 import { Text, IconButton, Button } from "react-native-paper";
 import { WebView } from "react-native-webview";
+import { DrawingStore } from "../data/drawingStore.js";
 
 export const FlowMapModal = ({
   visible,
@@ -9,18 +11,39 @@ export const FlowMapModal = ({
   onDismiss,
   onSaveDrawings,
 }) => {
-  // 1. ALL HOOKS MUST BE AT THE VERY TOP
   const webViewRef = useRef(null);
   const [currentDrawings, setCurrentDrawings] = useState([]);
+  const isLocalActionRef = useRef(false);
 
-  // Sync internal state when modal becomes visible or flowData changes
+  const stageId = flowData?.id || flowData?.flowCode;
+
+  // Function to sync current drawings from DrawingStore
+  const refreshStageDrawings = useCallback(() => {
+    if (!stageId) return;
+    const drawings = DrawingStore.getByStage(stageId) || [];
+    setCurrentDrawings(drawings);
+
+    // Push updated state directly to active Leaflet map
+    if (webViewRef.current && !isLocalActionRef.current) {
+      const script = `if (window.updateMapLayers) window.updateMapLayers(${JSON.stringify(drawings)}); true;`;
+      webViewRef.current.injectJavaScript(script);
+    }
+  }, [stageId]);
+
   useEffect(() => {
     if (visible && flowData) {
-      setCurrentDrawings(
-        Array.isArray(flowData.drawings) ? flowData.drawings : [],
-      );
+      refreshStageDrawings();
+
+      // Subscribe to external store changes (e.g. deletion from Project Map)
+      const unsubscribe = DrawingStore.subscribe(() => {
+        refreshStageDrawings();
+      });
+
+      return () => {
+        if (typeof unsubscribe === "function") unsubscribe();
+      };
     }
-  }, [flowData, visible]);
+  }, [visible, flowData, refreshStageDrawings]);
 
   const handleClearAll = useCallback(() => {
     Alert.alert(
@@ -32,8 +55,9 @@ export const FlowMapModal = ({
           text: "Clear All",
           style: "destructive",
           onPress: () => {
+            isLocalActionRef.current = true;
             webViewRef.current?.injectJavaScript(
-              `window.clearMapLayers(); true;`,
+              `if (window.clearMapLayers) window.clearMapLayers(); true;`,
             );
           },
         },
@@ -41,34 +65,40 @@ export const FlowMapModal = ({
     );
   }, []);
 
-  const handleSave = useCallback(() => {
-    if (onSaveDrawings && flowData?.id) {
-      onSaveDrawings(flowData.id, currentDrawings);
+  const handleSave = useCallback(async () => {
+    if (stageId) {
+      await DrawingStore.addOrUpdateStageDrawings(stageId, currentDrawings);
+      if (onSaveDrawings) {
+        onSaveDrawings(stageId, currentDrawings);
+      }
     }
     onDismiss();
-  }, [onSaveDrawings, flowData?.id, currentDrawings, onDismiss]);
+  }, [onSaveDrawings, stageId, currentDrawings, onDismiss]);
 
-  const handleWebViewMessage = useCallback((event) => {
+  const handleWebViewMessage = useCallback(async (event) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
       if (data.type === "SYNC_DRAWINGS") {
-        setCurrentDrawings(data.payload);
+        setCurrentDrawings(data.payload || []);
+      } else if (data.type === "DELETE_DRAWINGS") {
+        isLocalActionRef.current = true;
+        const deletedIds = data.ids || [];
+        if (deletedIds.length > 0) {
+          await DrawingStore.deleteMultiple(deletedIds);
+        }
       }
     } catch (e) {
       console.error("Error parsing webview event:", e);
+    } finally {
+      isLocalActionRef.current = false;
     }
   }, []);
 
-  // 2. CONDITIONAL RETURN GOES HERE (AFTER ALL HOOKS ARE DECLARED)
   if (!flowData) return null;
 
-  // Safe data extraction after hook setup
-  const stageId = flowData.id;
   const stageCode = flowData.flowCode || flowData.code || "1";
-  const initialDrawings = flowData.drawings || [];
   const activeCount = currentDrawings.length;
 
-  // Leaflet + Geoman HTML Template
   const leafletHTML = `
     <!DOCTYPE html>
     <html>
@@ -80,32 +110,10 @@ export const FlowMapModal = ({
         <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.14.2/dist/leaflet-geoman.min.js"></script>
         <style>
           body, html, #map { height: 100%; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-          .leaflet-pm-toolbar {
-            border: none !important;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
-            border-radius: 8px !important;
-            overflow: hidden;
-            margin-top: 10px !important;
-            margin-left: 10px !important;
-          }
-          .leaflet-pm-toolbar .leaflet-buttons-container a {
-            width: 32px !important;
-            height: 32px !important;
-            line-height: 32px !important;
-            border-bottom: 1px solid #F1F5F9 !important;
-          }
-          .leaflet-control-zoom {
-            border: none !important;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
-            border-radius: 8px !important;
-            overflow: hidden;
-          }
-          .leaflet-control-zoom a {
-            width: 32px !important;
-            height: 32px !important;
-            line-height: 32px !important;
-            color: #334155 !important;
-          }
+          .leaflet-pm-toolbar { border: none !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important; border-radius: 8px !important; margin-top: 10px !important; margin-left: 10px !important; }
+          .leaflet-pm-toolbar .leaflet-buttons-container a { width: 32px !important; height: 32px !important; line-height: 32px !important; border-bottom: 1px solid #F1F5F9 !important; }
+          .leaflet-control-zoom { border: none !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important; border-radius: 8px !important; }
+          .leaflet-control-zoom a { width: 32px !important; height: 32px !important; line-height: 32px !important; color: #334155 !important; }
         </style>
       </head>
       <body>
@@ -114,8 +122,11 @@ export const FlowMapModal = ({
           const STAGE_ID = ${JSON.stringify(stageId)};
           const STAGE_CODE = ${JSON.stringify(stageCode)};
 
-          const map = L.map('map', { zoomControl: false }).setView([7.8731, 80.7718], 8);
+          function generateUUID() {
+            return 'id-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+          }
 
+          const map = L.map('map', { zoomControl: false }).setView([7.8731, 80.7718], 8);
           L.control.zoom({ position: 'topright' }).addTo(map);
 
           L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -124,8 +135,12 @@ export const FlowMapModal = ({
 
           map.pm.addControls({
             position: 'topleft',
+            drawPolyline: true,
+            drawPolygon: true,
+            drawMarker: true,
+            drawCircle: true,
+            drawRectangle: true,
             drawCircleMarker: false,
-            drawRectangle: false,
             cutPolygon: false,
             drawText: false,
             rotateMode: false,
@@ -133,51 +148,65 @@ export const FlowMapModal = ({
 
           const drawnItems = new L.FeatureGroup().addTo(map);
 
+          const THEME_COLOR = '#7C3AED';
+          const THEME_FILL_COLOR = '#8B5CF6';
+
+          function createCircleLayer(lat, lng, radius, featureId) {
+            var circle = L.circle([lat, lng], {
+              radius: Number(radius) || 100,
+              color: THEME_COLOR,
+              fillColor: THEME_FILL_COLOR,
+              fillOpacity: 0.3,
+              weight: 3
+            });
+            circle.options.isCircle = true;
+            circle.options.radius = Number(radius) || 100;
+            circle.featureId = featureId || generateUUID();
+            return circle;
+          }
+
           function attachLayerEvents(layer) {
             layer.on('pm:edit', emitDrawings);
             layer.on('pm:dragend', emitDrawings);
             layer.on('pm:vertexchange', emitDrawings);
           }
 
-          const initialData = ${JSON.stringify(initialDrawings)};
-          if (Array.isArray(initialData) && initialData.length > 0) {
-            const geoJsonLayer = L.geoJSON(initialData, {
-              style: function() {
-                return { color: '#2563EB', weight: 3, opacity: 0.85, fillColor: '#3B82F6', fillOpacity: 0.2 };
-              }
-            });
-            
-            geoJsonLayer.eachLayer((layer) => {
-              drawnItems.addLayer(layer);
-              attachLayerEvents(layer);
-            });
-
-            setTimeout(() => {
-              try {
-                const bounds = drawnItems.getBounds();
-                if (bounds.isValid()) {
-                  map.fitBounds(bounds, { padding: [24, 24] });
-                }
-              } catch(err) {
-                console.error("Bounds error:", err);
-              }
-            }, 200);
-          }
-
           function emitDrawings() {
             const geoJsonData = [];
             drawnItems.eachLayer((layer) => {
-              if (layer.toGeoJSON) {
-                const geoJson = layer.toGeoJSON();
+              var geoJson;
+              var fid = layer.featureId || (layer.feature && layer.feature.id) || (layer.feature && layer.feature.properties && layer.feature.properties.id) || generateUUID();
+              
+              if (layer.options && (layer.options.isCircle || layer instanceof L.Circle)) {
+                var latlng = layer.getLatLng();
+                var radiusVal = typeof layer.getRadius === 'function' ? layer.getRadius() : (layer.options.radius || 100);
                 
-                geoJson.properties = {
-                  ...(geoJson.properties || {}),
+                geoJson = {
+                  type: "Feature",
+                  id: fid,
+                  properties: {
+                    id: fid,
+                    isCircle: true,
+                    radius: radiusVal
+                  },
+                  geometry: {
+                    type: "Point",
+                    coordinates: [latlng.lng, latlng.lat]
+                  }
+                };
+              } else if (layer.toGeoJSON) {
+                geoJson = layer.toGeoJSON();
+                geoJson.id = fid;
+              }
+
+              if (geoJson) {
+                geoJson.properties = Object.assign({}, geoJson.properties || {}, {
+                  id: fid,
                   stageId: STAGE_ID,
                   flowId: STAGE_ID,
                   stageCode: STAGE_CODE,
                   updatedAt: new Date().toISOString()
-                };
-                
+                });
                 geoJsonData.push(geoJson);
               }
             });
@@ -190,15 +219,106 @@ export const FlowMapModal = ({
             }
           }
 
+          function parseAndAddFeature(feature) {
+            if (!feature || !feature.geometry) return;
+            var props = feature.properties || {};
+            var featureId = feature.id || props.id || generateUUID();
+
+            if ((props.isCircle || props.radius || props.shape === 'Circle') && feature.geometry.type === 'Point') {
+              var coords = feature.geometry.coordinates;
+              var circleLayer = createCircleLayer(coords[1], coords[0], props.radius, featureId);
+              drawnItems.addLayer(circleLayer);
+              attachLayerEvents(circleLayer);
+              return;
+            }
+
+            if (feature.geometry.type === 'LineString') {
+              var coordinates = feature.geometry.coordinates.map(function(c) {
+                return [c[1], c[0]];
+              });
+              var polyline = L.polyline(coordinates, { color: THEME_COLOR, weight: 4, opacity: 0.85 });
+              polyline.featureId = featureId;
+              drawnItems.addLayer(polyline);
+              attachLayerEvents(polyline);
+              return;
+            }
+
+            var geoLayer = L.geoJSON(feature, {
+              style: function() {
+                return { color: THEME_COLOR, weight: 3, opacity: 0.85, fillColor: THEME_FILL_COLOR, fillOpacity: 0.2 };
+              },
+              pointToLayer: function(geoPoint, latlng) {
+                if (props.isCircle || props.radius) {
+                  return createCircleLayer(latlng.lat, latlng.lng, props.radius, featureId);
+                }
+                var marker = L.marker(latlng);
+                marker.featureId = featureId;
+                return marker;
+              }
+            });
+
+            geoLayer.eachLayer(function(l) {
+              l.featureId = featureId;
+              drawnItems.addLayer(l);
+              attachLayerEvents(l);
+            });
+          }
+
+          const initialData = ${JSON.stringify(currentDrawings)};
+          if (Array.isArray(initialData) && initialData.length > 0) {
+            initialData.forEach(parseAndAddFeature);
+
+            setTimeout(function() {
+              try {
+                const bounds = drawnItems.getBounds();
+                if (bounds.isValid()) {
+                  map.fitBounds(bounds, { padding: [24, 24] });
+                }
+              } catch(err) {}
+            }, 200);
+          }
+
           map.on('pm:create', (e) => {
-            const layer = e.layer;
+            var layer = e.layer;
+            var featureId = generateUUID();
+            layer.featureId = featureId;
+            
+            if (e.shape === 'Circle' || e.shape === 'CircleMarker' || (layer.options && layer.options.radius)) {
+              var radius = typeof layer.getRadius === 'function' ? layer.getRadius() : 100;
+              var latlng = layer.getLatLng();
+              
+              map.removeLayer(layer);
+              layer = createCircleLayer(latlng.lat, latlng.lng, radius, featureId);
+            } else {
+              if (layer.setStyle) {
+                layer.setStyle({
+                  color: THEME_COLOR,
+                  fillColor: THEME_FILL_COLOR,
+                  fillOpacity: 0.2,
+                  weight: 3
+                });
+              }
+            }
+
             drawnItems.addLayer(layer);
             attachLayerEvents(layer);
             emitDrawings();
           });
 
           map.on('pm:remove', (e) => {
-            drawnItems.removeLayer(e.layer);
+            var targetLayer = e.layer;
+            var deletedId = targetLayer.featureId || 
+                            (targetLayer.feature && targetLayer.feature.id) || 
+                            (targetLayer.feature && targetLayer.feature.properties && targetLayer.feature.properties.id);
+            
+            drawnItems.removeLayer(targetLayer);
+            
+            if (deletedId && window.ReactNativeWebView) {
+              window.ReactNativeWebView.postMessage(JSON.stringify({
+                type: 'DELETE_DRAWINGS',
+                ids: [String(deletedId)]
+              }));
+            }
             emitDrawings();
           });
 
@@ -207,8 +327,28 @@ export const FlowMapModal = ({
           });
 
           window.clearMapLayers = function() {
+            var deletedIds = [];
+            drawnItems.eachLayer(function(l) {
+              var id = l.featureId || (l.feature && l.feature.id) || (l.feature && l.feature.properties && l.feature.properties.id);
+              if (id) deletedIds.push(String(id));
+            });
+
             drawnItems.clearLayers();
+
+            if (deletedIds.length > 0 && window.ReactNativeWebView) {
+              window.ReactNativeWebView.postMessage(JSON.stringify({
+                type: 'DELETE_DRAWINGS',
+                ids: deletedIds
+              }));
+            }
             emitDrawings();
+          };
+
+          window.updateMapLayers = function(newFeatures) {
+            drawnItems.clearLayers();
+            if (Array.isArray(newFeatures) && newFeatures.length > 0) {
+              newFeatures.forEach(parseAndAddFeature);
+            }
           };
         </script>
       </body>
@@ -224,7 +364,6 @@ export const FlowMapModal = ({
     >
       <View style={styles.overlay}>
         <View style={styles.modalContainer}>
-          {/* Header */}
           <View style={styles.headerContainer}>
             <View style={styles.headerLeft}>
               <View style={styles.iconBadge}>
@@ -258,7 +397,6 @@ export const FlowMapModal = ({
             </TouchableOpacity>
           </View>
 
-          {/* Dynamic Status Banner */}
           <View style={styles.statusBanner}>
             <Text style={styles.statusBannerText}>
               {activeCount > 0
@@ -267,9 +405,9 @@ export const FlowMapModal = ({
             </Text>
           </View>
 
-          {/* Map Surface */}
           <View style={styles.mapFrame}>
             <WebView
+              key={`webview-${stageId}-${currentDrawings.length}`}
               ref={webViewRef}
               originWhitelist={["*"]}
               source={{ html: leafletHTML }}
@@ -278,7 +416,6 @@ export const FlowMapModal = ({
             />
           </View>
 
-          {/* Footer Actions */}
           <View style={styles.footerContainer}>
             {activeCount > 0 ? (
               <Button
@@ -328,10 +465,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
     overflow: "hidden",
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
     elevation: 8,
   },
   headerContainer: {
@@ -357,24 +490,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: 10,
   },
-  headerTitleGroup: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#0F172A",
-    letterSpacing: -0.2,
-  },
-  flowCodeText: {
-    fontSize: 12,
-    color: "#64748B",
-    marginTop: 1,
-  },
-  boldCode: {
-    fontWeight: "600",
-    color: "#2563EB",
-  },
+  headerTitleGroup: { flex: 1 },
+  headerTitle: { fontSize: 15, fontWeight: "700", color: "#0F172A" },
+  flowCodeText: { fontSize: 12, color: "#64748B", marginTop: 1 },
+  boldCode: { fontWeight: "600", color: "#2563EB" },
   closeIconButton: {
     width: 28,
     height: 28,
@@ -383,10 +502,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  zeroMargin: {
-    margin: 0,
-    padding: 0,
-  },
+  zeroMargin: { margin: 0, padding: 0 },
   statusBanner: {
     backgroundColor: "#F8FAFC",
     paddingHorizontal: 16,
@@ -395,18 +511,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: "#E2E8F0",
   },
-  statusBannerText: {
-    fontSize: 11,
-    color: "#64748B",
-    fontWeight: "500",
-  },
-  mapFrame: {
-    height: 420,
-    backgroundColor: "#F1F5F9",
-  },
-  webView: {
-    flex: 1,
-  },
+  statusBannerText: { fontSize: 11, color: "#64748B", fontWeight: "500" },
+  mapFrame: { height: 420, backgroundColor: "#F1F5F9" },
+  webView: { flex: 1 },
   footerContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -417,20 +524,8 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#E2E8F0",
   },
-  clearBtn: {
-    borderColor: "#FCA5A5",
-    borderRadius: 8,
-  },
-  clearBtnLabel: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  saveBtn: {
-    borderRadius: 8,
-    paddingHorizontal: 8,
-  },
-  saveBtnLabel: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
+  clearBtn: { borderColor: "#FCA5A5", borderRadius: 8 },
+  clearBtnLabel: { fontSize: 12, fontWeight: "600" },
+  saveBtn: { borderRadius: 8, paddingHorizontal: 8 },
+  saveBtnLabel: { fontSize: 12, fontWeight: "600" },
 });

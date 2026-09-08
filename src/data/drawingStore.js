@@ -1,9 +1,5 @@
-// drawingStore.js
+// data/drawingStore.js
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import {
-  mergeStageDrawings,
-  filterDrawingsByStage,
-} from "../utils/mapDrawingUtils";
 
 const STORAGE_KEY = "@project_stage_drawings";
 
@@ -45,6 +41,14 @@ const normalizeFeatures = (data) => {
   return [];
 };
 
+const saveToStorage = async (data) => {
+  try {
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (err) {
+    console.error("Failed to save drawings to storage:", err);
+  }
+};
+
 export const DrawingStore = {
   async init() {
     try {
@@ -63,12 +67,10 @@ export const DrawingStore = {
     return memoryDrawings;
   },
 
-  // Main Map calls this -> Always returns ALL drawings from ALL stages
   getAll() {
     return Array.isArray(memoryDrawings) ? [...memoryDrawings] : [];
   },
 
-  // Stage View calls this -> Returns ONLY drawings for that particular stage
   getByStage(stageId) {
     const all = this.getAll();
     if (!stageId || stageId === "all") return all;
@@ -77,34 +79,112 @@ export const DrawingStore = {
     );
   },
 
+  async add(feature) {
+    if (!feature) return memoryDrawings;
+
+    const featureId =
+      feature.id || feature.properties?.id || `id-${Date.now()}`;
+    const newFeature = {
+      ...feature,
+      id: featureId,
+      properties: {
+        ...(feature.properties || {}),
+        id: featureId,
+      },
+    };
+
+    memoryDrawings = [...memoryDrawings, newFeature];
+    await saveToStorage(memoryDrawings);
+    notify();
+    return memoryDrawings;
+  },
+
+  async update(id, updatedFeature) {
+    if (!id || !updatedFeature) return memoryDrawings;
+
+    const targetIdStr = String(id);
+
+    memoryDrawings = memoryDrawings.map((item) => {
+      const itemId = item.id || item.properties?.id;
+      if (itemId && String(itemId) === targetIdStr) {
+        return {
+          ...item,
+          ...updatedFeature,
+          id: id,
+          properties: {
+            ...(item.properties || {}),
+            ...(updatedFeature.properties || {}),
+            id: id,
+          },
+        };
+      }
+      return item;
+    });
+
+    await saveToStorage(memoryDrawings);
+    notify();
+    return memoryDrawings;
+  },
+
+  async delete(id) {
+    if (id === undefined || id === null || id === "") return memoryDrawings;
+
+    const targetIdStr = String(id);
+
+    memoryDrawings = memoryDrawings.filter((item) => {
+      const itemId = item.id || item.properties?.id;
+      return itemId && String(itemId) !== targetIdStr;
+    });
+
+    await saveToStorage(memoryDrawings);
+    notify();
+    return memoryDrawings;
+  },
+
+  async deleteMultiple(ids = []) {
+    if (!Array.isArray(ids) || ids.length === 0) return memoryDrawings;
+
+    const validIds = ids
+      .filter((id) => id !== undefined && id !== null && id !== "")
+      .map((id) => String(id));
+
+    if (validIds.length === 0) return memoryDrawings;
+
+    memoryDrawings = memoryDrawings.filter((item) => {
+      const itemId = item.id || item.properties?.id;
+      return !itemId || !validIds.includes(String(itemId));
+    });
+
+    await saveToStorage(memoryDrawings);
+    notify();
+    return memoryDrawings;
+  },
+
   async addOrUpdateStageDrawings(stageId, stageDrawings) {
     const currentDrawings = this.getAll();
     const targetStage = stageId || "default_global_stage";
 
-    // 1. Remove old drawings belonging ONLY to this specific stage
     const otherStageDrawings = currentDrawings.filter(
       (f) =>
         !f.properties || String(f.properties.stageId) !== String(targetStage),
     );
 
-    // 2. Tag incoming drawings with this stageId
-    const safeNewDrawings = normalizeFeatures(stageDrawings).map((f) => ({
-      ...f,
-      properties: {
-        ...(f.properties || {}),
-        stageId: targetStage,
-      },
-    }));
+    const safeNewDrawings = normalizeFeatures(stageDrawings).map((f) => {
+      const featureId = f.id || f.properties?.id || `id-${Date.now()}`;
+      return {
+        ...f,
+        id: featureId,
+        properties: {
+          ...(f.properties || {}),
+          id: featureId,
+          stageId: targetStage,
+        },
+      };
+    });
 
-    // 3. Combine both lists
     memoryDrawings = [...otherStageDrawings, ...safeNewDrawings];
 
-    try {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(memoryDrawings));
-    } catch (err) {
-      console.error("Failed to save drawings to storage:", err);
-    }
-
+    await saveToStorage(memoryDrawings);
     notify();
     return memoryDrawings;
   },
