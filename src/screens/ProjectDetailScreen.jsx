@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
+  Alert,
 } from "react-native";
 import {
   Text,
@@ -19,24 +20,90 @@ import {
 } from "react-native-paper";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as DocumentPicker from "expo-document-picker";
+import * as Sharing from "expo-sharing";
 
 import { MOCK_PROJECT_DETAILS } from "../data/mockProjectDetailsData";
 import { UpdatePlanModal } from "../components/UpdatePlanModal";
 import { UpdateProjectInformationModal } from "../components/UpdateProjectInformationModal";
 import { UpdateProjectHealthStatusModal } from "../components/UpdateProjectHealthStatusModal";
+import { CreateReportModal } from "../components/CreateReportModal";
+import { EditReportModal } from "../components/EditReportModal";
 import { ProjectMap } from "../components/ProjectMap";
 import { ProjectFlows } from "../components/ProjectFlows";
+import { ActivityLogsModal } from "../components/ActivityLogsModal";
 
 const { width } = Dimensions.get("window");
+
+const INITIAL_REPORTS = [
+  {
+    id: "1",
+    title: "Maintenance and Support Cost",
+    code: "CEB-XX-2026-666445",
+    type: "Project Status Report",
+    updatedDate: "Updated 03 Sept 2026, 11:36",
+    coverNote: "Maintenance and Support Cost",
+    includedSections: [
+      "cover_summary",
+      "key_metrics",
+      "physical_progress",
+      "financial_progress",
+      "organization",
+      "objectives",
+      "stakeholders",
+      "currencies",
+      "project_flows",
+      "cost_tracking",
+      "attachment_register",
+    ],
+  },
+  {
+    id: "2",
+    title: "Employee Salary Cost",
+    code: "CEB-XX-2026-666445",
+    type: "Project Status Report",
+    createdDate: "Created 03 Sept 2026, 11:38",
+    coverNote: "Employee Salary Cost",
+    includedSections: [
+      "cover_summary",
+      "key_metrics",
+      "financial_progress",
+      "cost_tracking",
+    ],
+  },
+  {
+    id: "3",
+    title: "Standard project report",
+    code: "CEB-XX-2026-666445",
+    type: "Project Status Report",
+    createdDate: "Created 14 Aug 2026, 16:44",
+    coverNote: "",
+    includedSections: [
+      "cover_summary",
+      "key_metrics",
+      "physical_progress",
+      "financial_progress",
+      "organization",
+      "description",
+      "objectives",
+      "scope",
+      "stakeholders",
+      "currencies",
+      "project_flows",
+      "cost_tracking",
+      "attachment_register",
+    ],
+  },
+];
 
 export const ProjectDetailScreen = ({ route }) => {
   const theme = useTheme();
 
-  // Dynamic project ID from navigation or fallback
   const projectId =
     route?.params?.id || MOCK_PROJECT_DETAILS.id || "default_project";
 
   const [project, setProject] = useState(MOCK_PROJECT_DETAILS);
+  const [reports, setReports] = useState(INITIAL_REPORTS);
   const [activeTab, setActiveTab] = useState("Description");
   const [searchQuery, setSearchQuery] = useState("");
   const [isMapFullscreen, setIsMapFullscreen] = useState(false);
@@ -45,11 +112,21 @@ export const ProjectDetailScreen = ({ route }) => {
   const [isPlanModalVisible, setIsPlanModalVisible] = useState(false);
   const [isDetailsModalVisible, setIsDetailsModalVisible] = useState(false);
   const [healthModalVisible, setHealthModalVisible] = useState(false);
+  const [isCreateReportModalVisible, setIsCreateReportModalVisible] =
+    useState(false);
+
+  // Edit Report Modal States
+  const [isEditReportModalVisible, setIsEditReportModalVisible] =
+    useState(false);
+  const [selectedReportToEdit, setSelectedReportToEdit] = useState(null);
+
   const [currentHealthStatus, setCurrentHealthStatus] = useState(
     project?.status || "On Hold",
   );
 
-  // 1. Load saved project details & flow order from AsyncStorage when screen mounts
+  const [isActivityLogsModalVisible, setIsActivityLogsModalVisible] =
+    useState(false);
+
   useEffect(() => {
     const loadSavedProjectData = async () => {
       try {
@@ -58,6 +135,9 @@ export const ProjectDetailScreen = ({ route }) => {
         );
         const storedFlows = await AsyncStorage.getItem(
           `@project_flows_${projectId}`,
+        );
+        const storedReports = await AsyncStorage.getItem(
+          `@project_reports_${projectId}`,
         );
 
         setProject((prev) => {
@@ -74,6 +154,10 @@ export const ProjectDetailScreen = ({ route }) => {
           }
           return updated;
         });
+
+        if (storedReports) {
+          setReports(JSON.parse(storedReports));
+        }
       } catch (error) {
         console.error("Failed to load project data from AsyncStorage:", error);
       }
@@ -85,62 +169,194 @@ export const ProjectDetailScreen = ({ route }) => {
   const metrics = project?.metrics || {};
   const overview = project?.overview || {};
 
-  // 2. Persist updated project details
-  const handleSaveProjectDetails = async (updatedInfo) => {
-    const updatedProject = {
-      ...project,
-      ...updatedInfo,
-    };
-    setProject(updatedProject);
-    setIsDetailsModalVisible(false);
-
+  // Persistence handler helper
+  const saveProjectToStorage = async (updatedProject) => {
     try {
+      setProject(updatedProject);
       await AsyncStorage.setItem(
         `@project_data_${projectId}`,
         JSON.stringify(updatedProject),
       );
     } catch (error) {
-      console.error("Error persisting project details:", error);
+      console.error("Error persisting project data:", error);
     }
   };
 
-  // 3. Persist health status change
+  const saveReportsToStorage = async (updatedReports) => {
+    try {
+      setReports(updatedReports);
+      await AsyncStorage.setItem(
+        `@project_reports_${projectId}`,
+        JSON.stringify(updatedReports),
+      );
+    } catch (error) {
+      console.error("Error persisting reports data:", error);
+    }
+  };
+
+  const handleSaveProjectDetails = async (updatedInfo) => {
+    const updatedProject = { ...project, ...updatedInfo };
+    setIsDetailsModalVisible(false);
+    await saveProjectToStorage(updatedProject);
+  };
+
   const handleUpdateHealthStatus = async (newStatus) => {
     setCurrentHealthStatus(newStatus);
-    const updatedProject = {
-      ...project,
-      status: newStatus,
-    };
-    setProject(updatedProject);
+    const updatedProject = { ...project, status: newStatus };
     setHealthModalVisible(false);
-
-    try {
-      await AsyncStorage.setItem(
-        `@project_data_${projectId}`,
-        JSON.stringify(updatedProject),
-      );
-    } catch (error) {
-      console.error("Error persisting health status:", error);
-    }
+    await saveProjectToStorage(updatedProject);
   };
 
-  // 4. Persist updated flow order
   const handleSaveFlows = async (updatedFlows) => {
-    setProject((prev) => ({
-      ...prev,
-      flows: updatedFlows,
-    }));
-
+    setProject((prev) => ({ ...prev, flows: updatedFlows }));
     try {
       await AsyncStorage.setItem(
         `@project_flows_${projectId}`,
         JSON.stringify(updatedFlows),
       );
-      console.log("Flow order persisted successfully!");
     } catch (error) {
       console.error("Error saving flow order:", error);
     }
   };
+
+  // ---------------- ATTACHMENT HANDLERS ----------------
+
+  const handlePickDocument = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: "*/*",
+        copyToCacheDirectory: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const pickedFile = result.assets[0];
+        const formattedSize = pickedFile.size
+          ? `${(pickedFile.size / 1024).toFixed(1)} KB`
+          : "0.0 KB";
+
+        const newAttachment = {
+          id: Date.now().toString(),
+          name: pickedFile.name,
+          size: formattedSize,
+          uri: pickedFile.uri,
+          uploadedBy: "d99902",
+          date: new Date().toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        };
+
+        const updatedAttachments = [
+          ...(project.attachments || []),
+          newAttachment,
+        ];
+
+        const updatedProject = {
+          ...project,
+          attachments: updatedAttachments,
+        };
+
+        await saveProjectToStorage(updatedProject);
+      }
+    } catch (err) {
+      console.error("Error picking document: ", err);
+    }
+  };
+
+  const handleDeleteAttachment = (fileId) => {
+    Alert.alert(
+      "Delete Attachment",
+      "Are you sure you want to delete this file?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            const updatedAttachments = (project.attachments || []).filter(
+              (item) => item.id !== fileId,
+            );
+            const updatedProject = {
+              ...project,
+              attachments: updatedAttachments,
+            };
+            await saveProjectToStorage(updatedProject);
+          },
+        },
+      ],
+    );
+  };
+
+  const handleDownloadAttachment = async (file) => {
+    try {
+      if (file.uri) {
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(file.uri);
+        } else {
+          Alert.alert("Download", `Downloading file: ${file.name}`);
+        }
+      } else {
+        Alert.alert(
+          "File Download",
+          `File path for ${file.name} is unavailable.`,
+        );
+      }
+    } catch (error) {
+      console.error("Error sharing/downloading file:", error);
+    }
+  };
+
+  // ---------------- REPORT HANDLERS ----------------
+
+  const handleCreateReportSubmit = (newReportData) => {
+    const updatedReports = [newReportData, ...reports];
+    saveReportsToStorage(updatedReports);
+  };
+
+  const handleEditReportClick = (report) => {
+    setSelectedReportToEdit(report);
+    setIsEditReportModalVisible(true);
+  };
+
+  const handleSaveEditedReport = (updatedReportData) => {
+    const updatedReports = reports.map((r) =>
+      r.id === updatedReportData.id ? updatedReportData : r,
+    );
+    saveReportsToStorage(updatedReports);
+  };
+
+  const handleDeleteReport = (reportId) => {
+    Alert.alert(
+      "Delete Report",
+      "Are you sure you want to delete this report?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            const updatedReports = reports.filter((r) => r.id !== reportId);
+            saveReportsToStorage(updatedReports);
+          },
+        },
+      ],
+    );
+  };
+
+  const handleDownloadReportPdf = (report) => {
+    Alert.alert("PDF Export", `Exporting ${report.title} to PDF...`);
+  };
+
+  // ---------------- ACTIVITY LOG HANDLER ----------------
+
+  const handleGetLogs = () => {
+    setIsActivityLogsModalVisible(true);
+  };
+
+  // -----------------------------------------------------
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -585,7 +801,7 @@ export const ProjectDetailScreen = ({ route }) => {
           activeStageId={null}
         />
 
-        {/* SEPARATED PROJECT FLOWS COMPONENT */}
+        {/* PROJECT FLOWS COMPONENT */}
         <ProjectFlows
           flows={project?.flows || []}
           setFlows={(updatedFlows) =>
@@ -617,6 +833,7 @@ export const ProjectDetailScreen = ({ route }) => {
               icon="upload-outline"
               style={styles.uploadBtn}
               labelStyle={{ fontSize: 12 }}
+              onPress={handlePickDocument}
             >
               Upload Files
             </Button>
@@ -652,12 +869,14 @@ export const ProjectDetailScreen = ({ route }) => {
                         size={16}
                         iconColor="#666"
                         style={styles.actionIconBtn}
+                        onPress={() => handleDownloadAttachment(file)}
                       />
                       <IconButton
                         icon="close"
                         size={16}
                         iconColor="#D9534F"
                         style={styles.actionIconBtn}
+                        onPress={() => handleDeleteAttachment(file.id)}
                       />
                     </View>
                   </View>
@@ -695,27 +914,159 @@ export const ProjectDetailScreen = ({ route }) => {
           </Card.Content>
         </Card>
 
-        {/* Cost Tracking */}
-        <Card style={[styles.cardMargin, { marginBottom: 32 }]}>
-          <Card.Title title="Cost Tracking" titleStyle={styles.boldText} />
-          <Card.Content>
-            {project?.costs?.map((cost, index) => (
-              <View key={cost.id || index} style={styles.costItem}>
-                <View style={styles.rowBetween}>
-                  <Text variant="bodySmall" style={{ opacity: 0.6 }}>
-                    {cost.date} · {cost.category}
+        {/* Reports Section */}
+        <Card style={styles.cardMargin}>
+          <View style={styles.reportsHeaderRow}>
+            <View style={styles.rowAlign}>
+              <IconButton
+                icon="chart-box-outline"
+                size={20}
+                style={styles.noMarginIcon}
+              />
+              <Text
+                variant="titleMedium"
+                style={[styles.boldText, { marginLeft: 6 }]}
+              >
+                Reports
+              </Text>
+            </View>
+            <Button
+              mode="contained"
+              compact
+              icon="plus"
+              buttonColor="#000"
+              textColor="#FFF"
+              style={styles.createReportBtn}
+              labelStyle={{ fontSize: 12, fontWeight: "600" }}
+              onPress={() => setIsCreateReportModalVisible(true)}
+            >
+              Create report
+            </Button>
+          </View>
+
+          <Card.Content style={styles.reportsCardContent}>
+            {reports.map((report) => (
+              <View key={report.id} style={styles.reportCardItem}>
+                <View style={styles.reportInfoSection}>
+                  <Text variant="titleSmall" style={styles.reportTitleText}>
+                    {report.title}
                   </Text>
-                  <Text variant="bodyMedium" style={styles.boldText}>
-                    {cost.lkr}
+                  <Text variant="bodySmall" style={styles.reportMetaText}>
+                    {report.code} — {report.type} ·{" "}
+                    {report.updatedDate || report.createdDate}
                   </Text>
                 </View>
-                <Text variant="bodySmall" style={{ marginTop: 2 }}>
-                  {cost.desc}
-                </Text>
+
+                <View style={styles.reportActionButtons}>
+                  <Button
+                    mode="outlined"
+                    compact
+                    icon="download"
+                    style={styles.pdfBtn}
+                    labelStyle={styles.pdfBtnLabel}
+                    onPress={() => handleDownloadReportPdf(report)}
+                  >
+                    PDF
+                  </Button>
+                  <IconButton
+                    icon="pencil-outline"
+                    size={18}
+                    iconColor="#333"
+                    style={styles.reportIconAction}
+                    onPress={() => handleEditReportClick(report)}
+                  />
+                  <IconButton
+                    icon="trash-can-outline"
+                    size={18}
+                    iconColor="#EF4444"
+                    style={styles.reportIconAction}
+                    onPress={() => handleDeleteReport(report.id)}
+                  />
+                </View>
               </View>
             ))}
           </Card.Content>
         </Card>
+
+        {/* Activity Logs Section */}
+        <Card style={[styles.cardMargin, { marginBottom: 32 }]}>
+          <View style={styles.activityHeaderRow}>
+            <View style={styles.rowAlign}>
+              <IconButton
+                icon="clipboard-text-outline"
+                size={20}
+                style={styles.noMarginIcon}
+              />
+              <Text
+                variant="titleMedium"
+                style={[styles.boldText, { marginLeft: 6 }]}
+              >
+                Activity Logs
+              </Text>
+            </View>
+          </View>
+
+          <Card.Content style={styles.activityContentBox}>
+            <View style={styles.activityMainRow}>
+              <View style={styles.activityIconWrapper}>
+                {/* <IconButton
+                  icon="script-text-outline"
+                  size={20}
+                  iconColor="#6B7280"
+                  style={styles.noMarginIcon}
+                /> */}
+              </View>
+
+              <View style={styles.activityTextContainer}>
+                <Text variant="bodyMedium" style={styles.activityTitleText}>
+                  Review user activity across project flows, cost tracking,
+                  plans, and attachments.
+                </Text>
+                {/* <Text variant="bodySmall" style={styles.activitySubtitleText}>
+                  Filter by category and user from the activity side panel.
+                </Text> */}
+              </View>
+
+              <Button
+                mode="outlined"
+                compact
+                icon="script-text-outline"
+                style={styles.getLogsBtn}
+                labelStyle={styles.getLogsBtnLabel}
+                onPress={handleGetLogs}
+              >
+                Get Logs
+              </Button>
+            </View>
+          </Card.Content>
+        </Card>
+
+        {/* Create Report Modal */}
+        <CreateReportModal
+          visible={isCreateReportModalVisible}
+          onDismiss={() => setIsCreateReportModalVisible(false)}
+          onCreate={handleCreateReportSubmit}
+          project={project}
+        />
+
+        {/* Edit Report Modal */}
+        <EditReportModal
+          visible={isEditReportModalVisible}
+          onDismiss={() => {
+            setIsEditReportModalVisible(false);
+            setSelectedReportToEdit(null);
+          }}
+          onSave={handleSaveEditedReport}
+          reportData={selectedReportToEdit}
+          project={project}
+        />
+
+        {/* Activity Logs Modal */}
+        <ActivityLogsModal
+          visible={isActivityLogsModalVisible}
+          onDismiss={() => setIsActivityLogsModalVisible(false)}
+          project={project}
+        />
       </ScrollView>
     </GestureHandlerRootView>
   );
@@ -762,7 +1113,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  rowAlign: { flexDirection: "row", alignItems: "center", gap: 6 },
+  rowAlign: { flexDirection: "row", alignItems: "center" },
   rowAlignFlex: { flexDirection: "row", alignItems: "center", flex: 1 },
   boldText: { fontWeight: "bold" },
   dimLabel: { opacity: 0.6 },
@@ -833,7 +1184,7 @@ const styles = StyleSheet.create({
   uploadBtn: { borderRadius: 6 },
   attachmentScroll: { marginTop: 4 },
   attachmentCard: {
-    width: 220,
+    width: 230,
     backgroundColor: "#FAFAFA",
     borderRadius: 8,
     borderWidth: 1,
@@ -852,10 +1203,88 @@ const styles = StyleSheet.create({
   metaIcon: { margin: 0, padding: 0, width: 14, height: 14 },
   metaText: { fontSize: 11, color: "#666", marginLeft: 2 },
 
-  // Cost tracking layout
-  costItem: {
-    paddingVertical: 8,
+  // Reports layout
+  reportsHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 14,
+  },
+  createReportBtn: { borderRadius: 6 },
+  reportsCardContent: { gap: 10, paddingTop: 0 },
+  reportCardItem: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    padding: 12,
+    gap: 10,
+  },
+  reportInfoSection: { flex: 1 },
+  reportTitleText: { fontWeight: "bold", fontSize: 14, color: "#111827" },
+  reportMetaText: { fontSize: 11, color: "#6B7280", marginTop: 4 },
+  reportActionButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 4,
+  },
+  pdfBtn: {
+    borderRadius: 6,
+    borderColor: "#D1D5DB",
+    marginRight: 4,
+    height: 32,
+    justifyContent: "center",
+  },
+  pdfBtnLabel: { fontSize: 11, marginVertical: 0, color: "#374151" },
+  reportIconAction: { margin: 0, padding: 0, width: 30, height: 30 },
+
+  // Activity Logs layout
+  activityHeaderRow: {
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
+    borderBottomColor: "#F3F4F6",
+  },
+  activityContentBox: {
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+  },
+  activityMainRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  activityIconWrapper: {
+    backgroundColor: "#F3F4F6",
+    padding: 6,
+    borderRadius: 8,
+  },
+  activityTextContainer: {
+    flex: 1,
+  },
+  activityTitleText: {
+    fontSize: 13,
+    color: "#1F2937",
+    fontWeight: "500",
+    lineHeight: 18,
+  },
+  activitySubtitleText: {
+    fontSize: 11,
+    color: "#6B7280",
+    marginTop: 2,
+  },
+  getLogsBtn: {
+    borderRadius: 6,
+    borderColor: "#E5E7EB",
+    height: 36,
+    justifyContent: "center",
+  },
+  getLogsBtnLabel: {
+    fontSize: 12,
+    color: "#111827",
+    fontWeight: "600",
+    marginVertical: 0,
   },
 });
