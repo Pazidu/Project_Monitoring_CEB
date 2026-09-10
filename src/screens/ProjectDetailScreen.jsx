@@ -846,7 +846,11 @@ export const ProjectDetailScreen = ({ route }) => {
               style={styles.attachmentScroll}
             >
               {project?.attachments?.map((file, index) => (
-                <View key={file.id || index} style={styles.attachmentCard}>
+                <View
+                  key={file.id || index}
+                  style={styles.attachmentCard}
+
+                >
                   <View style={styles.attachmentCardHeader}>
                     <View style={styles.rowAlignFlex}>
                       <IconButton
