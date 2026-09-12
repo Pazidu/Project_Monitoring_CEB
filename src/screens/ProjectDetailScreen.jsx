@@ -848,8 +848,10 @@ export const ProjectDetailScreen = ({ route }) => {
               {project?.attachments?.map((file, index) => (
                 <View
                   key={file.id || index}
-                  style={styles.attachmentCard}
-
+                  style={[
+                    styles.attachmentCard,
+                    { backgroundColor: theme.colors.surface },
+                  ]}
                 >
                   <View style={styles.attachmentCardHeader}>
                     <View style={styles.rowAlignFlex}>
@@ -950,7 +952,13 @@ export const ProjectDetailScreen = ({ route }) => {
 
           <Card.Content style={styles.reportsCardContent}>
             {reports.map((report) => (
-              <View key={report.id} style={styles.reportCardItem}>
+              <View
+                key={report.id}
+                style={[
+                  styles.reportCardItem,
+                  { backgroundColor: theme.colors.surface },
+                ]}
+              >
                 <View style={styles.reportInfoSection}>
                   <Text variant="titleSmall" style={styles.reportTitleText}>
                     {report.title}
@@ -975,8 +983,7 @@ export const ProjectDetailScreen = ({ route }) => {
                   <IconButton
                     icon="pencil-outline"
                     size={18}
-                    iconColor="#333"
-                    style={styles.reportIconAction}
+                    style={[styles.reportIconAction]}
                     onPress={() => handleEditReportClick(report)}
                   />
                   <IconButton
@@ -993,7 +1000,13 @@ export const ProjectDetailScreen = ({ route }) => {
         </Card>
 
         {/* Activity Logs Section */}
-        <Card style={[styles.cardMargin, { marginBottom: 32 }]}>
+        <Card
+          style={[
+            styles.cardMargin,
+            { marginBottom: 32 },
+            { textColor: theme.colors.surface },
+          ]}
+        >
           <View style={styles.activityHeaderRow}>
             <View style={styles.rowAlign}>
               <IconButton
@@ -1012,23 +1025,11 @@ export const ProjectDetailScreen = ({ route }) => {
 
           <Card.Content style={styles.activityContentBox}>
             <View style={styles.activityMainRow}>
-              <View style={styles.activityIconWrapper}>
-                {/* <IconButton
-                  icon="script-text-outline"
-                  size={20}
-                  iconColor="#6B7280"
-                  style={styles.noMarginIcon}
-                /> */}
-              </View>
-
               <View style={styles.activityTextContainer}>
                 <Text variant="bodyMedium" style={styles.activityTitleText}>
                   Review user activity across project flows, cost tracking,
                   plans, and attachments.
                 </Text>
-                {/* <Text variant="bodySmall" style={styles.activitySubtitleText}>
-                  Filter by category and user from the activity side panel.
-                </Text> */}
               </View>
 
               <Button
@@ -1217,7 +1218,6 @@ const styles = StyleSheet.create({
   createReportBtn: { borderRadius: 6 },
   reportsCardContent: { gap: 10, paddingTop: 0 },
   reportCardItem: {
-    backgroundColor: "#FFFFFF",
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "#E5E7EB",
@@ -1225,7 +1225,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   reportInfoSection: { flex: 1 },
-  reportTitleText: { fontWeight: "bold", fontSize: 14, color: "#111827" },
+  reportTitleText: { fontWeight: "bold", fontSize: 14 },
   reportMetaText: { fontSize: 11, color: "#6B7280", marginTop: 4 },
   reportActionButtons: {
     flexDirection: "row",
@@ -1235,12 +1235,11 @@ const styles = StyleSheet.create({
   },
   pdfBtn: {
     borderRadius: 6,
-    borderColor: "#D1D5DB",
     marginRight: 4,
     height: 32,
     justifyContent: "center",
   },
-  pdfBtnLabel: { fontSize: 11, marginVertical: 0, color: "#374151" },
+  pdfBtnLabel: { fontSize: 11, marginVertical: 0 },
   reportIconAction: { margin: 0, padding: 0, width: 30, height: 30 },
 
   // Activity Logs layout
@@ -1270,13 +1269,11 @@ const styles = StyleSheet.create({
   },
   activityTitleText: {
     fontSize: 13,
-    color: "#1F2937",
     fontWeight: "500",
     lineHeight: 18,
   },
   activitySubtitleText: {
     fontSize: 11,
-    color: "#6B7280",
     marginTop: 2,
   },
   getLogsBtn: {
@@ -1287,7 +1284,6 @@ const styles = StyleSheet.create({
   },
   getLogsBtnLabel: {
     fontSize: 12,
-    color: "#111827",
     fontWeight: "600",
     marginVertical: 0,
   },

@@ -6,7 +6,7 @@ import {
   Animated,
   Platform,
 } from "react-native";
-import { Text, Card, IconButton, Avatar } from "react-native-paper";
+import { Text, Card, IconButton, Avatar, useTheme } from "react-native-paper";
 import {
   GestureHandlerRootView,
   PanGestureHandler,
@@ -27,6 +27,7 @@ export const ProjectFlows = ({
   onSaveFlows,
   getStatusColor,
 }) => {
+  const theme = useTheme();
   const [expandedFlows, setExpandedFlows] = useState({});
   const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
   const [editingFlow, setEditingFlow] = useState(null);
@@ -351,7 +352,12 @@ export const ProjectFlows = ({
           ]}
         >
           {/* Main Flow Content Block */}
-          <View style={flowStyles.cardMainContent}>
+          <View
+            style={[
+              flowStyles.cardMainContent,
+              { backgroundColor: theme.colors.surface },
+            ]}
+          >
             {/* Top Bar: Reorder, Expand, Badge & Title */}
             <View style={flowStyles.headerSection}>
               <View style={flowStyles.headerLeft}>
@@ -479,7 +485,6 @@ export const ProjectFlows = ({
                   <IconButton
                     icon="map-marker-outline"
                     size={15}
-                    iconColor="#64748B"
                     style={flowStyles.noMarginIcon}
                   />
                 </TouchableOpacity>
@@ -502,7 +507,6 @@ export const ProjectFlows = ({
                   <IconButton
                     icon="pencil-outline"
                     size={15}
-                    iconColor="#64748B"
                     style={flowStyles.noMarginIcon}
                   />
                 </TouchableOpacity>
@@ -516,7 +520,6 @@ export const ProjectFlows = ({
                   <IconButton
                     icon="sitemap-outline"
                     size={15}
-                    iconColor="#64748B"
                     style={flowStyles.noMarginIcon}
                   />
                 </TouchableOpacity>
@@ -603,7 +606,7 @@ const flowStyles = StyleSheet.create({
   cardMargin: {
     marginBottom: 16,
     borderRadius: 16,
-    backgroundColor: "#F8FAFC",
+    // backgroundColor: "#F8FAFC",
     elevation: 0,
     borderWidth: 1,
     borderColor: "#E2E8F0",
@@ -620,7 +623,6 @@ const flowStyles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#0F172A",
     letterSpacing: -0.3,
   },
   headerSubtitle: {
@@ -811,7 +813,6 @@ const flowStyles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 6,
-    backgroundColor: "#F8FAFC",
     borderWidth: 1,
     borderColor: "#E2E8F0",
     justifyContent: "center",
