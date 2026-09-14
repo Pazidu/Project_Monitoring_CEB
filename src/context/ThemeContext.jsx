@@ -9,8 +9,10 @@ const customLight = {
     accent: "#D9251D",
     background: "#F4F6F8",
     surface: "#FFFFFF",
+    textColor: "#000000", // Black text for light background
     lettersInLightBackground: "#000000", // Black letters for light background
     attentionNeededBackground: "#ffc9c5", // Light red background for attention needed
+    activeTabBackground: "rgb(213, 213, 213)", //active tab background color
   },
 };
 
@@ -23,7 +25,9 @@ const customDark = {
     background: "#121212",
     surface: "#1E1E1E",
     lettersInLightBackground: "#000000",
+    textColor: "#FFFFFF", // White text for dark background
     attentionNeededBackground: "#545454", // Light red background for attention needed
+    activeTabBackground: "#4b4b4b", //active tab background color
   },
 };
 

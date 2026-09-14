@@ -45,7 +45,7 @@ export const UpdatePlanModal = ({ visible, onDismiss }) => {
   // State
   const [financeMonths, setFinanceMonths] = useState(INITIAL_FINANCE_MONTHS);
   const [physicalMonths, setPhysicalMonths] = useState(INITIAL_PHYSICAL_MONTHS);
-  const [notes, setNotes] = useState("Why this version was prepared");
+  const [notes, setNotes] = useState("");
 
   // Format numbers to LKR currency format
   const formatLKR = (amount) => {
@@ -192,7 +192,10 @@ export const UpdatePlanModal = ({ visible, onDismiss }) => {
           <TouchableOpacity
             style={[
               styles.tabItem,
-              activeTab === "Physical" && styles.activeTabItem,
+              activeTab === "Physical" && [
+                styles.activeTabItem,
+                { backgroundColor: theme.colors.activeTabBackground },
+              ],
             ]}
             onPress={() => setActiveTab("Physical")}
           >
@@ -208,7 +211,10 @@ export const UpdatePlanModal = ({ visible, onDismiss }) => {
           <TouchableOpacity
             style={[
               styles.tabItem,
-              activeTab === "Finance" && styles.activeTabItem,
+              activeTab === "Finance" && [
+                styles.activeTabItem,
+                { backgroundColor: theme.colors.activeTabBackground },
+              ],
             ]}
             onPress={() => setActiveTab("Finance")}
           >
@@ -228,7 +234,12 @@ export const UpdatePlanModal = ({ visible, onDismiss }) => {
           showsVerticalScrollIndicator={false}
         >
           {/* Mobile-Optimized Vertical Metadata Rows */}
-          <View style={styles.metadataList}>
+          <View
+            style={[
+              styles.metadataList,
+              { backgroundColor: theme.colors.activeTabBackground },
+            ]}
+          >
             {/* Version Row */}
             <View style={styles.metaRow}>
               <Text style={styles.metaLabel}>Version</Text>
@@ -294,7 +305,12 @@ export const UpdatePlanModal = ({ visible, onDismiss }) => {
             <View>
               <ScrollView horizontal showsHorizontalScrollIndicator={true}>
                 <View style={styles.tableContainer}>
-                  <View style={styles.tableHeader}>
+                  <View
+                    style={[
+                      styles.tableHeader,
+                      { backgroundColor: theme.colors.activeTabBackground },
+                    ]}
+                  >
                     <Text style={[styles.columnHeader, { width: 90 }]}>
                       MONTH
                     </Text>
@@ -336,7 +352,14 @@ export const UpdatePlanModal = ({ visible, onDismiss }) => {
                       <View
                         style={[styles.plannedAmountWrapper, { width: 150 }]}
                       >
-                        <View style={styles.lkrPrefix}>
+                        <View
+                          style={[
+                            styles.lkrPrefix,
+                            {
+                              backgroundColor: theme.colors.activeTabBackground,
+                            },
+                          ]}
+                        >
                           <Text style={styles.lkrPrefixText}>LKR</Text>
                         </View>
                         <TextInput
@@ -384,22 +407,38 @@ export const UpdatePlanModal = ({ visible, onDismiss }) => {
               </ScrollView>
 
               {/* Finance Totals Summary */}
-              <View style={styles.totalsRow}>
-                <Text style={styles.summaryText}>
-                  Total amount:{" "}
-                  <Text style={styles.boldText}>
+              <View style={styles.summaryContainer}>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Total Amount</Text>
+                  <Text style={styles.summaryColon}>:</Text>
+                  <Text style={[styles.summaryValue, styles.summaryBold]}>
                     LKR {formatLKR(totalAmount)}
                   </Text>
-                </Text>
-                <Text style={styles.summaryText}>
-                  Remaining: LKR {formatLKR(remainingAmount)}
-                </Text>
-                <Text style={styles.summaryText}>
-                  Approved budget: LKR {formatLKR(approvedBudget)}
-                </Text>
-                <Text style={styles.summaryText}>
-                  of budget: {totalPercentOfBudget}%
-                </Text>
+                </View>
+
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Approved Budget</Text>
+                  <Text style={styles.summaryColon}>:</Text>
+                  <Text style={styles.summaryValue}>
+                    LKR {formatLKR(approvedBudget)}
+                  </Text>
+                </View>
+
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Remaining</Text>
+                  <Text style={styles.summaryColon}>:</Text>
+                  <Text style={styles.summaryValue}>
+                    LKR {formatLKR(remainingAmount)}
+                  </Text>
+                </View>
+
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>% of Budget</Text>
+                  <Text style={styles.summaryColon}>:</Text>
+                  <Text style={styles.summaryValue}>
+                    {totalPercentOfBudget}%
+                  </Text>
+                </View>
               </View>
             </View>
           )}
@@ -408,7 +447,12 @@ export const UpdatePlanModal = ({ visible, onDismiss }) => {
           {activeTab === "Physical" && (
             <View>
               <View style={styles.tableContainer}>
-                <View style={styles.tableHeader}>
+                <View
+                  style={[
+                    styles.tableHeader,
+                    { backgroundColor: theme.colors.activeTabBackground },
+                  ]}
+                >
                   <Text style={[styles.columnHeader, { flex: 2 }]}>MONTH</Text>
                   <Text
                     style={[
@@ -464,14 +508,18 @@ export const UpdatePlanModal = ({ visible, onDismiss }) => {
               </View>
 
               {/* Physical Totals Summary */}
-              <View style={styles.totalsRow}>
-                <Text style={styles.summaryText}>
-                  Total increment:{" "}
-                  <Text style={styles.boldText}>{totalIncrement}%</Text>
-                </Text>
-                <Text style={styles.summaryText}>
-                  Remaining: {remainingPercent}%
-                </Text>
+              <View style={styles.summaryContainer}>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Total increment</Text>
+                  <Text style={styles.summaryColon}>:</Text>
+                  <Text style={styles.summaryValue}>{totalIncrement}%</Text>
+                </View>
+
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Remaining</Text>
+                  <Text style={styles.summaryColon}>:</Text>
+                  <Text style={styles.summaryValue}>{remainingPercent}%</Text>
+                </View>
               </View>
             </View>
           )}
@@ -482,10 +530,9 @@ export const UpdatePlanModal = ({ visible, onDismiss }) => {
             <TextInput
               mode="outlined"
               multiline
-              numberOfLines={3}
+              numberOfLines={5}
               value={notes}
               onChangeText={setNotes}
-              placeholder="Why this version was prepared"
               outlineStyle={styles.notesOutline}
               style={styles.notesInput}
             />
@@ -497,7 +544,7 @@ export const UpdatePlanModal = ({ visible, onDismiss }) => {
           <Button
             mode="outlined"
             onPress={onDismiss}
-            textColor="#333"
+            textColor={theme.colors.accent}
             style={styles.closeBtn}
           >
             Close
@@ -505,7 +552,8 @@ export const UpdatePlanModal = ({ visible, onDismiss }) => {
           <Button
             mode="contained"
             onPress={handleSave}
-            buttonColor="#000"
+            textColor="#fff"
+            backgroundColor={theme.colors.surface}
             style={styles.saveBtn}
           >
             Save as new version
@@ -521,22 +569,22 @@ const styles = StyleSheet.create({
     margin: 12,
     padding: 16,
     borderRadius: 8,
-    maxHeight: "92%",
+    maxHeight: "94%",
   },
   header: {
     flexDirection: "row",
     alignItems: "flex-start",
     marginBottom: 12,
   },
-  boldText: { fontWeight: "700", color: "#111827" },
+  boldText: { fontWeight: "700" },
   subtext: { color: "#6B7280", marginTop: 4, lineHeight: 18 },
   closeIcon: { margin: -8, marginTop: -4 },
 
   // Tabs
   tabBar: {
     flexDirection: "row",
-    backgroundColor: "#F3F4F6",
     borderRadius: 6,
+    borderWidth: 2,
     padding: 3,
     marginBottom: 14,
   },
@@ -547,18 +595,16 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   activeTabItem: {
-    backgroundColor: "#FFFFFF",
     elevation: 1,
   },
-  tabText: { fontSize: 13, color: "#6B7280" },
-  activeTabText: { fontWeight: "600", color: "#111827" },
+  tabText: { fontSize: 13 },
+  activeTabText: { fontWeight: "600" },
   bodyScroll: { flexGrow: 0 },
 
   // Mobile-Optimized Metadata Stack
   metadataList: {
-    backgroundColor: "#F9FAFB",
     padding: 12,
-    borderRadius: 6,
+    borderRadius: 12,
     marginBottom: 14,
     gap: 10,
   },
@@ -571,31 +617,30 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  metaLabel: { fontSize: 12, color: "#6B7280", fontWeight: "500" },
-  metaLabelInline: { fontSize: 12, color: "#6B7280" },
-  metaValue: { fontSize: 13, fontWeight: "500", color: "#111827" },
+  metaLabel: { fontSize: 14, fontWeight: "900", marginBottom: 4 },
+  metaLabelInline: { fontSize: 12 },
+  metaValue: { fontSize: 13, fontWeight: "500" },
   dropdownSelector: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     borderWidth: 1,
-    borderColor: "#E5E7EB",
     borderRadius: 6,
     paddingLeft: 10,
     height: 40,
-    backgroundColor: "#FFF",
   },
-  dropdownText: { fontSize: 13, color: "#374151" },
+  dropdownText: { fontSize: 13 },
 
   // Header options
   rangeRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
+    marginTop: 14,
+    marginBottom: 5,
   },
-  rangeText: { fontSize: 12, color: "#6B7280" },
-  distributeLink: { fontSize: 12, fontWeight: "600", color: "#111827" },
+  rangeText: { fontSize: 10, color: "#6B7280" },
+  distributeLink: { fontSize: 10, fontWeight: "600", color: "#5387f7" },
 
   // Table
   tableContainer: {
@@ -606,7 +651,6 @@ const styles = StyleSheet.create({
   },
   tableHeader: {
     flexDirection: "row",
-    backgroundColor: "#F9FAFB",
     paddingVertical: 10,
     paddingHorizontal: 12,
     alignItems: "center",
@@ -614,7 +658,6 @@ const styles = StyleSheet.create({
   columnHeader: {
     fontSize: 11,
     fontWeight: "600",
-    color: "#6B7280",
     letterSpacing: 0.3,
   },
   tableRow: {
@@ -625,8 +668,8 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#F3F4F6",
   },
-  monthLabel: { fontSize: 13, fontWeight: "700", color: "#111827" },
-  cellText: { fontSize: 13, color: "#374151" },
+  monthLabel: { fontSize: 13, fontWeight: "700" },
+  cellText: { fontSize: 13 },
 
   // Planned Amount Input Container (with LKR badge)
   plannedAmountWrapper: {
@@ -635,7 +678,6 @@ const styles = StyleSheet.create({
   },
   lkrPrefix: {
     backgroundColor: "#F3F4F6",
-    borderWidth: 1,
     borderColor: "#E5E7EB",
     borderRightWidth: 0,
     borderTopLeftRadius: 6,
@@ -644,11 +686,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     justifyContent: "center",
   },
-  lkrPrefixText: { fontSize: 10, color: "#6B7280", fontWeight: "600" },
+  lkrPrefixText: { fontSize: 9, fontWeight: "300" },
   amountInput: {
     flex: 1,
     height: 36,
-    backgroundColor: "#FFF",
     fontSize: 13,
   },
 
@@ -656,22 +697,46 @@ const styles = StyleSheet.create({
   incrementInput: {
     width: 80,
     height: 36,
-    backgroundColor: "#FFF",
     textAlign: "right",
     fontSize: 13,
   },
   inputOutline: { borderColor: "#E5E7EB", borderRadius: 6 },
 
   // Summary Row & Notes
-  totalsRow: {
-    flexDirection: "column",
+  summaryContainer: {
+    marginTop: 12,
+    padding: 12,
+    borderWidth: 1,
     marginVertical: 12,
     gap: 4,
   },
-  summaryText: { fontSize: 12, color: "#4B5563" },
-  notesContainer: { marginTop: 4, marginBottom: 12 },
-  notesInput: { backgroundColor: "#FFF", fontSize: 13 },
+  summaryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  summaryLabel: {
+    width: 120, // Adjust this width if you need more space for labels
+    fontSize: 12,
+  },
+  summaryColon: {
+    width: 16,
+    fontSize: 12,
+    textAlign: "center",
+  },
+  summaryValue: {
+    flex: 1,
+    fontSize: 12,
+    textAlign: "right",
+  },
+  summaryBold: {
+    fontWeight: "bold",
+  },
   notesOutline: { borderColor: "#E5E7EB", borderRadius: 6 },
+  notesInput: {
+    fontSize: 13,
+    padding: 8,
+    marginBottom: 12,
+  },
 
   // Actions
   actionRow: {
@@ -682,6 +747,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#F3F4F6",
   },
-  closeBtn: { borderRadius: 6, borderColor: "#E5E7EB" },
+  closeBtn: { borderRadius: 6 },
   saveBtn: { borderRadius: 6 },
 });
