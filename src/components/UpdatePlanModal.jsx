@@ -1,3 +1,4 @@
+import { BlurView } from "expo-blur";
 import React, { useState } from "react";
 import { View, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
 import {
@@ -167,6 +168,8 @@ export const UpdatePlanModal = ({ visible, onDismiss }) => {
           { backgroundColor: theme.colors.surface },
         ]}
       >
+        <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
+
         {/* Header */}
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
@@ -544,17 +547,18 @@ export const UpdatePlanModal = ({ visible, onDismiss }) => {
           <Button
             mode="outlined"
             onPress={onDismiss}
-            textColor={theme.colors.accent}
+            textColor={theme.colors.backgroundInverse}
             style={styles.closeBtn}
           >
             Close
           </Button>
           <Button
-            mode="contained"
             onPress={handleSave}
-            textColor="#fff"
-            backgroundColor={theme.colors.surface}
-            style={styles.saveBtn}
+            textColor={theme.colors.background}
+            style={[
+              styles.saveBtn,
+              { backgroundColor: theme.colors.backgroundInverse },
+            ]}
           >
             Save as new version
           </Button>

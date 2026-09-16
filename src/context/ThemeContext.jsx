@@ -6,8 +6,9 @@ const customLight = {
   colors: {
     ...MD3LightTheme.colors,
     primary: "#005A9C", // CEB Corporate Blue
-    accent: "#D9251D",
+    accentt: "#D9251D",
     background: "#F4F6F8",
+    backgroundInverse: "#000000",
     surface: "#FFFFFF",
     textColor: "#000000", // Black text for light background
     lettersInLightBackground: "#000000", // Black letters for light background
@@ -21,8 +22,9 @@ const customDark = {
   colors: {
     ...MD3DarkTheme.colors,
     primary: "#4DA3FF",
-    accent: "#FF5252",
+    accentt: "#FF5252",
     background: "#121212",
+    backgroundInverse: "#FFFFFF",
     surface: "#1E1E1E",
     lettersInLightBackground: "#000000",
     textColor: "#FFFFFF", // White text for dark background

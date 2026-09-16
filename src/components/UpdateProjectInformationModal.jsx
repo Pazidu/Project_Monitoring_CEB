@@ -179,14 +179,19 @@ export const UpdateProjectInformationModal = ({
           compact
           icon="plus"
           onPress={() => handleAddContact(setContacts)}
-          textColor="#374151"
         >
           Add
         </Button>
       </View>
 
       {contacts.map((contact, index) => (
-        <View key={contact.id} style={styles.contactCard}>
+        <View
+          key={contact.id}
+          style={[
+            styles.contactCard,
+            { backgroundColor: theme.colors.activeTabBackground },
+          ]}
+        >
           <View style={styles.contactCardHeader}>
             <Text style={styles.contactCardTitle}>Entry #{index + 1}</Text>
             {contacts.length > 1 && (
@@ -496,20 +501,20 @@ export const UpdateProjectInformationModal = ({
             <View style={styles.headerWithIcon}>
               <IconButton
                 icon="account-group-outline"
-                size={18}
+                size={25}
                 iconColor="#4B5563"
                 style={{ margin: 0 }}
               />
               <View style={{ flex: 1 }}>
                 <Text style={styles.sectionTitle}>User Access Control</Text>
                 <Text style={styles.metaLabel}>
-                  Assign users who can monitor or edit this project
+                  Assign users who can access this project
                 </Text>
               </View>
             </View>
 
             {/* Monitoring Users */}
-            <View style={{ marginTop: 12 }}>
+            <View style={{ marginTop: 18 }}>
               <View style={styles.sectionHeaderRow}>
                 <Text style={styles.metaLabelBold}>Monitoring Users</Text>
                 <TouchableOpacity onPress={() => setMonitoringUsers([])}>
@@ -573,12 +578,7 @@ export const UpdateProjectInformationModal = ({
           <View style={styles.fieldGroup}>
             <Text style={styles.metaLabel}>Attachments</Text>
             <View style={styles.filePickerRow}>
-              <Button
-                mode="outlined"
-                compact
-                textColor="#374151"
-                style={styles.filePickerBtn}
-              >
+              <Button mode="outlined" compact style={styles.filePickerBtn}>
                 Choose
               </Button>
               <Text
@@ -587,7 +587,7 @@ export const UpdateProjectInformationModal = ({
               >
                 {fileName}
               </Text>
-              <IconButton icon="upload-outline" size={18} />
+              <IconButton icon="upload-outline" size={20} />
             </View>
           </View>
 
@@ -600,7 +600,7 @@ export const UpdateProjectInformationModal = ({
                 value={plannedStart}
                 onChangeText={setPlannedStart}
                 right={
-                  <TextInput.Icon icon="calendar-month-outline" size={16} />
+                  <TextInput.Icon icon="calendar-month-outline" size={20} />
                 }
                 outlineStyle={styles.inputOutline}
                 style={styles.textInputDense}
@@ -614,7 +614,7 @@ export const UpdateProjectInformationModal = ({
                 value={plannedEnd}
                 onChangeText={setPlannedEnd}
                 right={
-                  <TextInput.Icon icon="calendar-month-outline" size={16} />
+                  <TextInput.Icon icon="calendar-month-outline" size={20} />
                 }
                 outlineStyle={styles.inputOutline}
                 style={styles.textInputDense}
@@ -633,7 +633,12 @@ export const UpdateProjectInformationModal = ({
 
             <View style={{ marginTop: 10 }}>
               <Text style={styles.metaLabelBold}>Base Currency</Text>
-              <View style={styles.baseCurrencyBox}>
+              <View
+                style={[
+                  styles.baseCurrencyBox,
+                  { backgroundColor: theme.colors.activeTabBackground },
+                ]}
+              >
                 <Text style={styles.metaValue}>LKR · Sri Lankan Rupee</Text>
               </View>
             </View>
@@ -706,9 +711,18 @@ export const UpdateProjectInformationModal = ({
 
               {/* Base Currency - Always Rendered */}
               <View style={styles.exchangeRateRow}>
-                <Text style={styles.exchangeCodeText}>LKR</Text>
+                <View
+                  style={[
+                    styles.exchangeCodeBox,
+                    {
+                      backgroundColor: theme.colors.activeTabBackground,
+                    },
+                  ]}
+                >
+                  <Text style={styles.exchangeCodeText}>LKR</Text>
+                </View>
                 <Text style={[styles.metaLabel, { flex: 1, marginBottom: 0 }]}>
-                  Sri Lankan Rupee · always 1.00
+                  Sri Lankan Rupee ( always 1.00 )
                 </Text>
                 <TextInput
                   mode="outlined"
@@ -725,7 +739,16 @@ export const UpdateProjectInformationModal = ({
                 .filter((curr) => !curr.isBase && selectedCurrencies[curr.code])
                 .map((curr) => (
                   <View key={curr.code} style={styles.exchangeRateRow}>
-                    <Text style={styles.exchangeCodeText}>{curr.code}</Text>
+                    <View
+                      style={[
+                        styles.exchangeCodeBox,
+                        {
+                          backgroundColor: theme.colors.activeTabBackground,
+                        },
+                      ]}
+                    >
+                      <Text style={styles.exchangeCodeText}>{curr.code}</Text>
+                    </View>
                     <Text
                       style={[styles.metaLabel, { flex: 1, marginBottom: 0 }]}
                     >
@@ -774,15 +797,16 @@ export const UpdateProjectInformationModal = ({
           <Button
             mode="outlined"
             onPress={onDismiss}
-            textColor="#374151"
+            textColor={theme.colors.backgroundInverse}
             style={styles.actionBtn}
           >
             Cancel
           </Button>
           <Button
             mode="contained"
+            textColor={theme.colors.background}
+            buttonColor={theme.colors.backgroundInverse}
             onPress={handleSaveInternal}
-            buttonColor="#000"
             style={styles.actionBtn}
           >
             Save
@@ -799,7 +823,7 @@ const styles = StyleSheet.create({
     marginVertical: 20,
     padding: 16,
     borderRadius: 12,
-    maxHeight: "90%",
+    maxHeight: "94%",
   },
   header: {
     flexDirection: "row",
@@ -811,28 +835,27 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingRight: 8,
   },
-  boldText: { fontWeight: "700", color: "#111827" },
-  subtext: { color: "#6B7280", marginTop: 2, fontSize: 12 },
+  boldText: { fontWeight: "700" },
+  subtext: { color: "#6B7280", marginTop: 2, fontSize: 12, marginBottom: 4 },
   subtextBold: { fontWeight: "600", color: "#111827" },
   closeIcon: { margin: 0, marginTop: -6, marginRight: -6, fontWeight: "700" },
   bodyScroll: { flexGrow: 0 },
 
-  fieldGroup: { marginBottom: 12 },
+  fieldGroup: { marginTop: 20, marginBottom: 20 },
   stackLayout: { flexDirection: "column" },
 
-  metaLabel: { fontSize: 12, color: "#6B7280", marginBottom: 4 },
-  metaLabelBold: { fontSize: 12, fontWeight: "600", color: "#374151" },
+  metaLabel: { fontSize: 13, fontWeight: "700", marginBottom: 4 },
+  metaLabelBold: { fontSize: 12, fontWeight: "600" },
   fieldLabelBold: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "600",
-    color: "#111827",
     marginBottom: 6,
   },
-  metaValue: { fontSize: 13, fontWeight: "500", color: "#111827" },
+  metaValue: { fontSize: 13, fontWeight: "500" },
 
   inputOutline: { borderColor: "#E5E7EB", borderRadius: 6 },
-  textInputDense: { backgroundColor: "#FFF", fontSize: 13, height: 42 },
-  multilineInput: { backgroundColor: "#FFF", fontSize: 13, padding: 8 },
+  textInputDense: { fontSize: 13, height: 48 },
+  multilineInput: { fontSize: 13, padding: 8 },
 
   dropdownSelector: {
     flexDirection: "row",
@@ -842,14 +865,12 @@ const styles = StyleSheet.create({
     borderColor: "#E5E7EB",
     borderRadius: 6,
     paddingLeft: 10,
-    height: 42,
-    backgroundColor: "#FFF",
+    height: 48,
   },
-  dropdownText: { fontSize: 13, color: "#374151" },
+  dropdownText: { fontSize: 13 },
 
   sectionBlock: {
     marginBottom: 14,
-    backgroundColor: "#F9FAFB",
     padding: 12,
     borderRadius: 8,
   },
@@ -858,14 +879,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  sectionTitle: { fontSize: 13, fontWeight: "700", color: "#111827" },
+  sectionTitle: { fontSize: 14, fontWeight: "300", marginBottom: 10 },
 
   contactCard: {
-    backgroundColor: "#FFFFFF",
     padding: 10,
     borderRadius: 6,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
     marginTop: 8,
     gap: 8,
   },
@@ -885,22 +903,21 @@ const styles = StyleSheet.create({
   accessControlBox: {
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    borderStyle: "dashed",
     borderRadius: 8,
     padding: 12,
-    marginBottom: 14,
+    marginBottom: 20,
   },
   headerWithIcon: { flexDirection: "row", alignItems: "center", gap: 6 },
-  clearAllLink: { fontSize: 11, color: "#6B7280" },
+  clearAllLink: { fontSize: 11 },
   chipContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 4,
     marginVertical: 6,
   },
-  chipStyle: { backgroundColor: "#E5E7EB", height: 35 },
-  chipText: { fontSize: 10, color: "#374151" },
-  searchUserInput: { backgroundColor: "#FFF", fontSize: 12, height: 40 },
+  chipStyle: { height: 35 },
+  chipText: { fontSize: 10 },
+  searchUserInput: { fontSize: 12, height: 40 },
 
   filePickerRow: {
     flexDirection: "row",
@@ -909,10 +926,15 @@ const styles = StyleSheet.create({
     borderColor: "#E5E7EB",
     borderRadius: 6,
     paddingHorizontal: 8,
-    height: 44,
+    height: 54,
     gap: 8,
   },
-  filePickerBtn: { borderRadius: 4, borderColor: "#D1D5DB" },
+  filePickerBtn: {
+    borderRadius: 4,
+    borderColor: "#D1D5DB",
+    height: 40,
+    fontSize: 12,
+  },
 
   currenciesBox: {
     borderWidth: 1,
@@ -922,7 +944,6 @@ const styles = StyleSheet.create({
     marginVertical: 12,
   },
   baseCurrencyBox: {
-    backgroundColor: "#F3F4F6",
     padding: 10,
     borderRadius: 6,
     marginTop: 4,
@@ -960,16 +981,24 @@ const styles = StyleSheet.create({
     marginVertical: 6,
     gap: 8,
   },
+  exchangeCodeBox: {
+    backgroundColor: "#F3F4F6",
+    borderColor: "#E5E7EB",
+    borderRightWidth: 0,
+    borderTopLeftRadius: 6,
+    borderBottomLeftRadius: 6,
+    height: 32,
+    paddingHorizontal: 6,
+    justifyContent: "center",
+  },
+
   exchangeCodeText: {
-    width: 36,
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#374151",
+    fontSize: 9,
+    fontWeight: "300",
   },
   exchangeInput: {
     width: 130,
     height: 40,
-    backgroundColor: "#FFF",
     fontSize: 12,
   },
 

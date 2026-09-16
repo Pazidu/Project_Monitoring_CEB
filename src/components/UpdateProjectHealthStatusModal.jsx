@@ -47,7 +47,7 @@ export const UpdateProjectHealthStatusModal = ({
         onDismiss={onDismiss}
         contentContainerStyle={[
           styles.modalContainer,
-          { backgroundColor: theme.colors.surface || "#FFFFFF" },
+          { backgroundColor: theme.colors.surface },
         ]}
       >
         {/* Header */}
@@ -125,10 +125,10 @@ export const UpdateProjectHealthStatusModal = ({
         {/* Action Buttons */}
         <View style={styles.actionRow}>
           <Button
-            mode="contained"
+            mode="outlined"
             onPress={onDismiss}
-            buttonColor="#F3F4F6"
-            textColor="#374151"
+            backgroundColor={theme.colors.surface}
+            textColor={theme.colors.textColor}
             style={styles.cancelBtn}
             labelStyle={styles.btnLabel}
           >
@@ -137,8 +137,8 @@ export const UpdateProjectHealthStatusModal = ({
           <Button
             mode="contained"
             onPress={handleSave}
-            buttonColor="#111827"
-            textColor="#FFFFFF"
+            backgroundColor={theme.colors.backgroundInverse}
+            textColor={theme.colors.background}
             style={styles.saveBtn}
             labelStyle={styles.btnLabel}
           >
@@ -172,7 +172,6 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#111827",
   },
   modalSubtitle: {
     fontSize: 12,
@@ -191,7 +190,6 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#374151",
     marginBottom: 6,
   },
   dropdownSelector: {
@@ -203,11 +201,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     height: 44,
-    backgroundColor: "#FFFFFF",
   },
   dropdownText: {
     fontSize: 14,
-    color: "#111827",
     fontWeight: "500",
   },
   chipsContainer: {
