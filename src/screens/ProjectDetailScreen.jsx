@@ -655,7 +655,10 @@ export const ProjectDetailScreen = ({ route }) => {
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                style={styles.tabContainer}
+                style={[
+                  styles.tabContainer,
+                  { backgroundColor: theme.colors.activeTabBackground },
+                ]}
               >
                 {tabs.map((tab) => {
                   const isActive = activeTab === tab.key;
@@ -665,13 +668,20 @@ export const ProjectDetailScreen = ({ route }) => {
                       onPress={() => setActiveTab(tab.key)}
                       style={[
                         styles.tabButton,
-                        isActive && styles.activeTabButton,
+                        isActive && [
+                          styles.activeTabButton,
+                          { backgroundColor: theme.colors.background },
+                        ],
                       ]}
                     >
                       <IconButton
                         icon={tab.icon}
                         size={16}
-                        iconColor={isActive ? "#000" : "#666"}
+                        iconColor={
+                          isActive
+                            ? theme.colors.backgroundInverse
+                            : theme.colors.backgroundInverse
+                        }
                         style={{ margin: 0, padding: 0 }}
                       />
                       <Text
@@ -770,7 +780,7 @@ export const ProjectDetailScreen = ({ route }) => {
                               <Chip
                                 compact
                                 style={styles.baseChip}
-                                textColor="#B7950B"
+                                textStyle={styles.baseChipText}
                               >
                                 BASE
                               </Chip>
@@ -1149,7 +1159,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  rowAlign: { flexDirection: "row", alignItems: "center" },
+  rowAlign: { flexDirection: "row", alignItems: "center", gap: 8 },
   rowAlignFlex: { flexDirection: "row", alignItems: "center", flex: 1 },
   boldText: { fontWeight: "bold" },
   dimLabel: { opacity: 0.6 },
@@ -1159,9 +1169,8 @@ const styles = StyleSheet.create({
   // Tabs layout
   tabContainer: {
     flexDirection: "row",
-    backgroundColor: "#F2F4F4",
     borderRadius: 8,
-    padding: 4,
+    padding: 5,
     marginBottom: 12,
   },
   tabButton: {
@@ -1173,11 +1182,10 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   activeTabButton: {
-    backgroundColor: "#FFFFFF",
     elevation: 1,
   },
-  tabText: { fontSize: 12, color: "#666", marginLeft: 2 },
-  activeTabText: { fontWeight: "bold", color: "#000" },
+  tabText: { fontSize: 12, marginLeft: 2 },
+  activeTabText: { fontWeight: "bold" },
   tabContentContainer: { paddingTop: 6 },
   contentText: { opacity: 0.8, lineHeight: 20 },
 
@@ -1190,11 +1198,10 @@ const styles = StyleSheet.create({
   stakeholderCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FAFAFA",
     padding: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#EEEEEE",
+    borderColor: "#ababab",
   },
 
   // Currency Card layout
@@ -1202,13 +1209,25 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#FAFAFA",
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#EEEEEE",
+    borderColor: "#9b9b9b",
   },
-  baseChip: { backgroundColor: "#FCF3CF", height: 20 },
+  baseChip: {
+    backgroundColor: "#2E180D",
+    borderRadius: 6,
+    height: 24,
+    alignSelf: "center",
+    justifyContent: "center",
+  },
+  baseChipText: {
+    color: "#FFB900",
+    fontSize: 11,
+    fontWeight: "700",
+    marginVertical: 0,
+    marginHorizontal: 4,
+  },
 
   // Attachments layout
   attachmentHeaderRow: {
