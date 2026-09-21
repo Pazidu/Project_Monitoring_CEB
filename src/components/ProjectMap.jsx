@@ -7,7 +7,13 @@ import {
   Modal,
   StatusBar,
 } from "react-native";
-import { Text, Card, IconButton, TextInput } from "react-native-paper";
+import {
+  Text,
+  Card,
+  IconButton,
+  TextInput,
+  useTheme,
+} from "react-native-paper";
 import { WebView } from "react-native-webview";
 import { DrawingStore } from "../data/drawingStore.js";
 
@@ -18,6 +24,7 @@ export const ProjectMap = ({
   setSearchQuery,
   activeStageId = null,
 }) => {
+  const theme = useTheme();
   const webViewRef = useRef(null);
   const [allDrawings, setAllDrawings] = useState([]);
   const [isStoreReady, setIsStoreReady] = useState(false);
@@ -439,19 +446,26 @@ export const ProjectMap = ({
         <View style={styles.topControlRow}>
           {isMapFullscreen && (
             <TouchableOpacity
-              style={styles.iconBackBtn}
+              style={[
+                styles.iconBackBtn,
+                { backgroundColor: theme.colors.background },
+              ]}
               onPress={() => setIsMapFullscreen(false)}
             >
               <IconButton
                 icon="arrow-left"
                 size={20}
-                iconColor="#333"
                 style={styles.noMarginIcon}
               />
             </TouchableOpacity>
           )}
 
-          <View style={styles.searchBarBox}>
+          <View
+            style={[
+              styles.searchBarBox,
+              { backgroundColor: theme.colors.background },
+            ]}
+          >
             <TouchableOpacity onPress={handleSearchSubmit}>
               <IconButton
                 icon="magnify"
@@ -473,13 +487,15 @@ export const ProjectMap = ({
           </View>
 
           <TouchableOpacity
-            style={styles.fullscreenBtn}
+            style={[
+              styles.fullscreenBtn,
+              { backgroundColor: theme.colors.background },
+            ]}
             onPress={() => setIsMapFullscreen(!isMapFullscreen)}
           >
             <IconButton
               icon={isMapFullscreen ? "fullscreen-exit" : "fullscreen"}
               size={18}
-              iconColor="#444"
               style={styles.noMarginIcon}
             />
           </TouchableOpacity>
@@ -487,7 +503,12 @@ export const ProjectMap = ({
       </View>
 
       {/* Right Tools Container (Zoom Controls directly under Fullscreen button) */}
-      <View style={styles.rightToolsContainer}>
+      <View
+        style={[
+          styles.rightToolsContainer,
+          { backgroundColor: theme.colors.background },
+        ]}
+      >
         <View style={styles.toolGroup}>
           <TouchableOpacity
             style={styles.toolBtn}
@@ -506,11 +527,16 @@ export const ProjectMap = ({
       </View>
 
       {/* Recenter Button */}
-      <TouchableOpacity style={styles.recenterBtn} onPress={handleRecenter}>
+      <TouchableOpacity
+        style={[
+          styles.recenterBtn,
+          { backgroundColor: theme.colors.background },
+        ]}
+        onPress={handleRecenter}
+      >
         <IconButton
           icon="crosshairs-gps"
           size={18}
-          iconColor="#444"
           style={styles.noMarginIcon}
         />
       </TouchableOpacity>
@@ -563,7 +589,6 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFF",
     borderRadius: 8,
     paddingHorizontal: 6,
     height: 36,
@@ -576,7 +601,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   fullscreenBtn: {
-    backgroundColor: "#FFF",
     borderRadius: 8,
     padding: 6,
     elevation: 3,
@@ -589,7 +613,6 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   toolGroup: {
-    backgroundColor: "#FFF",
     borderRadius: 8,
     elevation: 3,
     overflow: "hidden",
@@ -597,16 +620,16 @@ const styles = StyleSheet.create({
   toolBtn: {
     width: 34,
     height: 34,
+    borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
   },
-  zoomText: { fontSize: 16, fontWeight: "bold", color: "#333" },
+  zoomText: { fontSize: 16, fontWeight: "bold" },
   toolDivider: { height: 1, backgroundColor: "#EEE" },
   recenterBtn: {
     position: "absolute",
     bottom: 16,
     right: 16,
-    backgroundColor: "#FFF",
     borderRadius: 8,
     padding: 6,
     elevation: 3,

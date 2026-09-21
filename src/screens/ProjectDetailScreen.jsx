@@ -140,6 +140,7 @@ export const ProjectDetailScreen = ({ route }) => {
   useEffect(() => {
     const loadSavedProjectData = async () => {
       try {
+        await AsyncStorage.removeItem(`@project_data_${projectId}`);
         const storedDetails = await AsyncStorage.getItem(
           `@project_data_${projectId}`,
         );
@@ -731,36 +732,124 @@ export const ProjectDetailScreen = ({ route }) => {
                 )}
 
                 {activeTab === "Stakeholders" && (
-                  <View style={{ gap: 10 }}>
-                    {overview.stakeholders?.map((sh, i) => (
-                      <View key={i} style={styles.stakeholderCard}>
-                        <Avatar.Icon
-                          size={36}
-                          icon="account-outline"
-                          style={{
-                            backgroundColor: sh.title?.includes("Director")
-                              ? "#E8F8F5"
-                              : "#FEF9E7",
-                          }}
-                          color={
-                            sh.title?.includes("Director")
-                              ? "#117A65"
-                              : "#D68910"
-                          }
-                        />
-                        <View style={{ flex: 1, marginLeft: 10 }}>
-                          <Text variant="labelSmall" style={styles.dimLabel}>
-                            {sh.role}
-                          </Text>
-                          <Text variant="titleSmall" style={styles.boldText}>
-                            {sh.title}
-                          </Text>
-                          <Text variant="bodySmall" style={{ opacity: 0.7 }}>
-                            ✉ {sh.email}
-                          </Text>
-                          <Text variant="bodySmall" style={{ opacity: 0.7 }}>
-                            📞 {sh.phone}
-                          </Text>
+                  <View style={{ gap: 18 }}>
+                    {Object.entries(
+                      (overview.stakeholders || []).reduce((acc, sh) => {
+                        const searchableStr =
+                          `${sh.role || ""} ${sh.title || ""} ${sh.category || ""}`.toUpperCase();
+
+                        let groupKey = "OTHER STAKEHOLDERS";
+                        let config = {
+                          icon: "account-group-outline",
+                          color: "#6B7280",
+                          bgColor: "rgba(107, 114, 128, 0.15)",
+                        };
+
+                        if (searchableStr.includes("DIRECTOR")) {
+                          groupKey = "PROJECT DIRECTORS";
+                          config = {
+                            icon: "account-tie-outline",
+                            color: "#10B981",
+                            bgColor: "rgba(16, 185, 129, 0.15)",
+                          };
+                        } else if (searchableStr.includes("MANAGER")) {
+                          groupKey = "PROJECT MANAGERS";
+                          config = {
+                            icon: "account-outline",
+                            color: "#F59E0B",
+                            bgColor: "rgba(245, 158, 11, 0.15)",
+                          };
+                        } else if (searchableStr.includes("CONTRACTOR")) {
+                          groupKey = "CONTRACTORS";
+                          config = {
+                            icon: "office-building-outline",
+                            color: "#3B82F6",
+                            bgColor: "rgba(59, 130, 246, 0.15)",
+                          };
+                        } else if (searchableStr.includes("CONSULTANT")) {
+                          groupKey = "CONSULTANTS";
+                          config = {
+                            icon: "briefcase-outline",
+                            color: "#8B5CF6",
+                            bgColor: "rgba(139, 92, 246, 0.15)",
+                          };
+                        }
+
+                        if (!acc[groupKey]) {
+                          acc[groupKey] = { config, items: [] };
+                        }
+                        acc[groupKey].items.push(sh);
+                        return acc;
+                      }, {}),
+                    ).map(([category, { config, items }]) => (
+                      <View key={category} style={{ gap: 10 }}>
+                        {/* Group Header */}
+                        <View style={styles.sectionHeader}>
+                          <View
+                            style={[
+                              styles.iconBadge,
+                              { backgroundColor: config.bgColor },
+                            ]}
+                          >
+                            <Avatar.Icon
+                              size={20}
+                              icon={config.icon}
+                              color={config.color}
+                              style={{ backgroundColor: "transparent" }}
+                            />
+                          </View>
+                          <Text style={styles.sectionTitle}>{category}</Text>
+                        </View>
+
+                        {/* 2-Column Grid Container */}
+                        <View style={styles.stakeholderGrid}>
+                          {items.map((sh, i) => (
+                            <View key={i} style={styles.stakeholderGridCard}>
+                              <Text
+                                variant="titleSmall"
+                                style={styles.boldText}
+                                numberOfLines={1}
+                              >
+                                {sh.role || sh.title || "—"}
+                              </Text>
+
+                              {sh.email ? (
+                                <View style={styles.contactRow}>
+                                  <IconButton
+                                    icon="email-outline"
+                                    size={14}
+                                    iconColor="#94A3B8"
+                                    style={styles.contactIcon}
+                                  />
+                                  <Text
+                                    variant="bodySmall"
+                                    style={styles.dimLabel}
+                                    numberOfLines={1}
+                                  >
+                                    {sh.email}
+                                  </Text>
+                                </View>
+                              ) : null}
+
+                              {sh.phone ? (
+                                <View style={styles.contactRow}>
+                                  <IconButton
+                                    icon="phone-outline"
+                                    size={14}
+                                    iconColor="#94A3B8"
+                                    style={styles.contactIcon}
+                                  />
+                                  <Text
+                                    variant="bodySmall"
+                                    style={styles.dimLabel}
+                                    numberOfLines={1}
+                                  >
+                                    {sh.phone}
+                                  </Text>
+                                </View>
+                              ) : null}
+                            </View>
+                          ))}
                         </View>
                       </View>
                     ))}
@@ -1166,6 +1255,34 @@ const styles = StyleSheet.create({
   noMarginIcon: { margin: 0, padding: 0, width: 22, height: 22 },
   miniProgressBar: { height: 6, borderRadius: 3, marginTop: 6 },
 
+  stakeholderGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    gap: 5,
+  },
+  stakeholderGridCard: {
+    width: "49%",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#737373",
+    padding: 10,
+    gap: 0,
+  },
+
+  contactRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 2,
+  },
+  contactIcon: {
+    margin: 0,
+    padding: 0,
+    width: 20,
+    height: 20,
+    marginRight: 4,
+  },
+
   // Tabs layout
   tabContainer: {
     flexDirection: "row",
@@ -1194,14 +1311,34 @@ const styles = StyleSheet.create({
   bulletPoint: { marginRight: 6, fontSize: 16, lineHeight: 20 },
   bulletText: { flex: 1, opacity: 0.8 },
 
-  // Stakeholder Card layout
-  stakeholderCard: {
+  // Section Headers & Category Badges
+  sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 10,
+    gap: 8,
+  },
+  iconBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#94A3B8",
+    letterSpacing: 0.8,
+  },
+
+  // Stakeholder Card layout
+  stakeholderCard: {
+    backgroundColor: "#1E1E24",
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#ababab",
+    borderColor: "#2D2D35",
+    padding: 12,
+    gap: 4,
   },
 
   // Currency Card layout

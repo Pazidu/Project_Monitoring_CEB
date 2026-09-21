@@ -136,7 +136,6 @@ export const ProjectFlows = ({
     const updatedFlows = updateDrawingsRecursively(flows);
     setFlows(updatedFlows);
 
-    // Sync selected target item so counts update live in UI header
     if (selectedMapFlow && selectedMapFlow.id === flowId) {
       setSelectedMapFlow((prev) => ({
         ...prev,
@@ -301,6 +300,7 @@ export const ProjectFlows = ({
     isSubFlow = false,
     parentIndex = null,
     parentNumTag = "",
+    isLastChild = false,
   ) => {
     const colors = getStatusColor
       ? getStatusColor(item.status)
@@ -341,201 +341,227 @@ export const ProjectFlows = ({
       <React.Fragment key={itemId}>
         {showIndicatorBefore && renderDropIndicator()}
 
-        <Animated.View
-          style={[
-            flowStyles.flowCard,
-            isSubFlow && flowStyles.subFlowCard,
-            isDraggingThis && [
-              flowStyles.draggingCard,
-              { transform: [{ translateY }] },
-            ],
-          ]}
-        >
-          {/* Main Flow Content Block */}
-          <View
+        <View style={isSubFlow ? flowStyles.subFlowItemWrapper : null}>
+          {/* Connector tree lines for sub-flows */}
+          {isSubFlow && (
+            <View style={flowStyles.treeConnectorContainer}>
+              <View
+                style={[
+                  flowStyles.verticalTreeLine,
+                  isLastChild && flowStyles.verticalTreeLineHalf,
+                ]}
+              />
+              <View style={flowStyles.horizontalTreeBranch} />
+            </View>
+          )}
+
+          <Animated.View
             style={[
-              flowStyles.cardMainContent,
-              { backgroundColor: theme.colors.surface },
+              flowStyles.flowCard,
+              isSubFlow && flowStyles.subFlowCard,
+              isDraggingThis && [
+                flowStyles.draggingCard,
+                { transform: [{ translateY }] },
+              ],
             ]}
           >
-            {/* Top Bar: Reorder, Expand, Badge & Title */}
-            <View style={flowStyles.headerSection}>
-              <View style={flowStyles.headerLeft}>
-                <PanGestureHandler
-                  onGestureEvent={(e) =>
-                    handleGestureEvent(
-                      e,
-                      index,
-                      isSubFlow,
-                      parentIndex,
-                      subCount,
-                    )
-                  }
-                  onHandlerStateChange={(e) =>
-                    handleHandlerStateChange(
-                      e,
-                      index,
-                      isSubFlow,
-                      parentIndex,
-                      subCount,
-                      itemId,
-                    )
-                  }
-                >
-                  <View style={flowStyles.dragHandle}>
-                    <IconButton
-                      icon="drag-vertical"
-                      size={18}
-                      iconColor={isDraggingThis ? "#2563EB" : "#94A3B8"}
-                      style={flowStyles.noMarginIcon}
-                    />
-                  </View>
-                </PanGestureHandler>
-
-                {hasChildren ? (
-                  <TouchableOpacity
-                    onPress={() => toggleAccordion(item.id)}
-                    style={flowStyles.chevronBtn}
-                    activeOpacity={0.7}
+            {/* Main Flow Content Block */}
+            <View
+              style={[
+                flowStyles.cardMainContent,
+                { backgroundColor: theme.colors.surface },
+              ]}
+            >
+              {/* Top Bar: Reorder, Expand, Badge & Title */}
+              <View style={flowStyles.headerSection}>
+                <View style={flowStyles.headerLeft}>
+                  <PanGestureHandler
+                    onGestureEvent={(e) =>
+                      handleGestureEvent(
+                        e,
+                        index,
+                        isSubFlow,
+                        parentIndex,
+                        subCount,
+                      )
+                    }
+                    onHandlerStateChange={(e) =>
+                      handleHandlerStateChange(
+                        e,
+                        index,
+                        isSubFlow,
+                        parentIndex,
+                        subCount,
+                        itemId,
+                      )
+                    }
                   >
-                    <IconButton
-                      icon={isExpanded ? "chevron-down" : "chevron-right"}
-                      size={18}
-                      iconColor="#64748B"
-                      style={flowStyles.noMarginIcon}
-                    />
-                  </TouchableOpacity>
-                ) : (
-                  <View style={flowStyles.chevronPlaceholder} />
-                )}
+                    <View style={flowStyles.dragHandle}>
+                      <IconButton
+                        icon="drag-vertical"
+                        size={18}
+                        iconColor={isDraggingThis ? "#2563EB" : "#94A3B8"}
+                        style={flowStyles.noMarginIcon}
+                      />
+                    </View>
+                  </PanGestureHandler>
 
-                <View style={flowStyles.flowIdBadge}>
-                  <Text style={flowStyles.flowIdText}>#{numberTag}</Text>
-                </View>
-
-                <Text style={flowStyles.flowTitle} numberOfLines={1}>
-                  {cleanTitle(item.title)}
-                </Text>
-              </View>
-
-              {/* Status Badge */}
-              <View
-                style={[flowStyles.customBadge, { backgroundColor: colors.bg }]}
-              >
-                <Text
-                  style={[flowStyles.customBadgeText, { color: colors.text }]}
-                >
-                  {item.status || "Not Started"}
-                </Text>
-              </View>
-            </View>
-
-            {/* Bottom Bar: Meta & Actions */}
-            <View style={flowStyles.metaSection}>
-              <View style={flowStyles.metaLeft}>
-                {/* Assignees Avatars */}
-                <View style={flowStyles.avatarContainer}>
-                  {item.assignees?.map((assignee, idx) => (
-                    <Avatar.Image
-                      key={idx}
-                      size={22}
-                      source={
-                        assignee.avatar
-                          ? { uri: assignee.avatar }
-                          : require("../../assets/icon.png")
-                      }
-                      style={[
-                        flowStyles.avatar,
-                        { marginLeft: idx > 0 ? -8 : 0 },
-                      ]}
-                    />
-                  )) || (
-                    <Avatar.Text
-                      size={22}
-                      label={item.assignedToInitials || "PD"}
-                      style={flowStyles.avatarFallback}
-                      labelStyle={{ fontSize: 10, fontWeight: "600" }}
-                    />
+                  {hasChildren ? (
+                    <TouchableOpacity
+                      onPress={() => toggleAccordion(item.id)}
+                      style={flowStyles.chevronBtn}
+                      activeOpacity={0.7}
+                    >
+                      <IconButton
+                        icon={isExpanded ? "chevron-down" : "chevron-right"}
+                        size={18}
+                        iconColor="#64748B"
+                        style={flowStyles.noMarginIcon}
+                      />
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={flowStyles.chevronPlaceholder} />
                   )}
+
+                  <View style={flowStyles.flowIdBadge}>
+                    <Text style={flowStyles.flowIdText}>#{numberTag}</Text>
+                  </View>
+
+                  <Text style={flowStyles.flowTitle} numberOfLines={1}>
+                    {cleanTitle(item.title)}
+                  </Text>
                 </View>
 
-                {/* Progress Bar & Percentage */}
-                <View style={flowStyles.progressWrapper}>
-                  <View style={flowStyles.progressBarTrack}>
-                    <View
-                      style={[
-                        flowStyles.progressBarFill,
-                        { width: `${Math.min(numericProgress, 100)}%` },
-                      ]}
-                    />
-                  </View>
-                  <Text style={flowStyles.progressText}>
-                    {Math.round(numericProgress)}%
+                {/* Status Badge */}
+                <View
+                  style={[
+                    flowStyles.customBadge,
+                    { backgroundColor: colors.bg },
+                  ]}
+                >
+                  <Text
+                    style={[flowStyles.customBadgeText, { color: colors.text }]}
+                  >
+                    {item.status || "Not Started"}
                   </Text>
                 </View>
               </View>
 
-              {/* Icon Action Buttons */}
-              <View style={flowStyles.actionButtonsGroup}>
-                <TouchableOpacity
-                  style={flowStyles.iconActionBtn}
-                  activeOpacity={0.6}
-                  onPress={() => handleOpenMap(item, numberTag)}
-                >
-                  <IconButton
-                    icon="map-marker-outline"
-                    size={15}
-                    style={flowStyles.noMarginIcon}
-                  />
-                </TouchableOpacity>
+              {/* Bottom Bar: Meta & Actions */}
+              <View style={flowStyles.metaSection}>
+                <View style={flowStyles.metaLeft}>
+                  {/* Assignees Avatars */}
+                  <View style={flowStyles.avatarContainer}>
+                    {item.assignees?.map((assignee, idx) => (
+                      <Avatar.Image
+                        key={idx}
+                        size={22}
+                        source={
+                          assignee.avatar
+                            ? { uri: assignee.avatar }
+                            : require("../../assets/icon.png")
+                        }
+                        style={[
+                          flowStyles.avatar,
+                          { marginLeft: idx > 0 ? -8 : 0 },
+                        ]}
+                      />
+                    )) || (
+                      <Avatar.Text
+                        size={22}
+                        label={item.assignedToInitials || "PD"}
+                        style={flowStyles.avatarFallback}
+                        labelStyle={{ fontSize: 10, fontWeight: "600" }}
+                      />
+                    )}
+                  </View>
 
-                <TouchableOpacity
-                  style={flowStyles.iconActionBtn}
-                  activeOpacity={0.6}
-                  onPress={() => {
-                    const currentCode = String(numberTag || item.code || "1");
-                    const rootStage = currentCode.split(".")[0];
+                  {/* Progress Bar & Percentage */}
+                  <View style={flowStyles.progressWrapper}>
+                    <View style={flowStyles.progressBarTrack}>
+                      <View
+                        style={[
+                          flowStyles.progressBarFill,
+                          { width: `${Math.min(numericProgress, 100)}%` },
+                        ]}
+                      />
+                    </View>
+                    <Text style={flowStyles.progressText}>
+                      {Math.round(numericProgress)}%
+                    </Text>
+                  </View>
+                </View>
 
-                    setEditingFlow({
-                      ...item,
-                      computedCode: currentCode,
-                      code: currentCode,
-                      stageNumber: rootStage,
-                    });
-                  }}
-                >
-                  <IconButton
-                    icon="pencil-outline"
-                    size={15}
-                    style={flowStyles.noMarginIcon}
-                  />
-                </TouchableOpacity>
+                {/* Icon Action Buttons */}
+                <View style={flowStyles.actionButtonsGroup}>
+                  <TouchableOpacity
+                    style={flowStyles.iconActionBtn}
+                    activeOpacity={0.6}
+                    onPress={() => handleOpenMap(item, numberTag)}
+                  >
+                    <IconButton
+                      icon="map-marker-outline"
+                      size={15}
+                      style={flowStyles.noMarginIcon}
+                      color={theme.colors.backgroundInverse}
+                    />
+                  </TouchableOpacity>
 
-                {/* Sub-flow Creation Trigger Button */}
-                <TouchableOpacity
-                  style={flowStyles.iconActionBtn}
-                  activeOpacity={0.6}
-                  onPress={() => handleOpenCreateSubFlow(item)}
-                >
-                  <IconButton
-                    icon="sitemap-outline"
-                    size={15}
-                    style={flowStyles.noMarginIcon}
-                  />
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    style={flowStyles.iconActionBtn}
+                    activeOpacity={0.6}
+                    onPress={() => {
+                      const currentCode = String(numberTag || item.code || "1");
+                      const rootStage = currentCode.split(".")[0];
+
+                      setEditingFlow({
+                        ...item,
+                        computedCode: currentCode,
+                        code: currentCode,
+                        stageNumber: rootStage,
+                      });
+                    }}
+                  >
+                    <IconButton
+                      icon="pencil-outline"
+                      size={15}
+                      style={flowStyles.noMarginIcon}
+                    />
+                  </TouchableOpacity>
+
+                  {/* Sub-flow Creation Trigger Button */}
+                  <TouchableOpacity
+                    style={flowStyles.iconActionBtn}
+                    activeOpacity={0.6}
+                    onPress={() => handleOpenCreateSubFlow(item)}
+                  >
+                    <IconButton
+                      icon="sitemap-outline"
+                      size={15}
+                      style={flowStyles.noMarginIcon}
+                    />
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
-          </View>
 
-          {/* Sub-flows Container */}
-          {isExpanded && hasChildren && (
-            <View style={flowStyles.subFlowsContainer}>
-              {item.children.map((sub, subIdx) =>
-                renderFlowItem(sub, subIdx, true, index, numberTag),
-              )}
-            </View>
-          )}
-        </Animated.View>
+            {/* Sub-flows Container */}
+            {isExpanded && hasChildren && (
+              <View style={flowStyles.subFlowsContainer}>
+                {item.children.map((sub, subIdx) =>
+                  renderFlowItem(
+                    sub,
+                    subIdx,
+                    true,
+                    index,
+                    numberTag,
+                    subIdx === item.children.length - 1,
+                  ),
+                )}
+              </View>
+            )}
+          </Animated.View>
+        </View>
 
         {showIndicatorAfter && renderDropIndicator()}
       </React.Fragment>
@@ -606,7 +632,6 @@ const flowStyles = StyleSheet.create({
   cardMargin: {
     marginBottom: 16,
     borderRadius: 16,
-    // backgroundColor: "#F8FAFC",
     elevation: 0,
     borderWidth: 1,
     borderColor: "#E2E8F0",
@@ -655,7 +680,7 @@ const flowStyles = StyleSheet.create({
 
   // Flow Cards
   flowCard: {
-    backgroundColor: "#FFFFFF",
+    flex: 1,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "#E2E8F0",
@@ -675,7 +700,6 @@ const flowStyles = StyleSheet.create({
   },
   draggingCard: {
     borderColor: "#2563EB",
-    backgroundColor: "#FFFFFF",
     opacity: 0.9,
     zIndex: 999,
     elevation: 6,
@@ -685,10 +709,9 @@ const flowStyles = StyleSheet.create({
     shadowRadius: 8,
   },
   subFlowCard: {
-    marginLeft: 12,
-    marginTop: 8,
-    backgroundColor: "#FAFAFA",
-    borderColor: "#E2E8F0",
+    marginLeft: 0,
+    marginTop: 0,
+    borderColor: "#898989",
   },
   cardMainContent: {
     padding: 12,
@@ -819,13 +842,40 @@ const flowStyles = StyleSheet.create({
     alignItems: "center",
   },
 
-  // Subflows Container
+  // Subflows Container & Tree Structure
   subFlowsContainer: {
-    paddingBottom: 8,
-    paddingRight: 8,
-    borderLeftWidth: 2,
-    borderLeftColor: "#E2E8F0",
-    marginLeft: 24,
+    paddingTop: 4,
+    paddingLeft: 16,
+  },
+  subFlowItemWrapper: {
+    flexDirection: "row",
+    alignItems: "stretch",
+    position: "relative",
+  },
+  treeConnectorContainer: {
+    width: 20,
+    position: "relative",
+  },
+  verticalTreeLine: {
+    position: "absolute",
+    left: 4,
+    top: 0,
+    bottom: 0,
+    width: 2,
+    backgroundColor: "#fefefe",
+  },
+  verticalTreeLineHalf: {
+    height: 32,
+    bottom: "auto",
+  },
+  horizontalTreeBranch: {
+    position: "absolute",
+    left: 4,
+    top: 30,
+    width: 14,
+    height: 2,
+    backgroundColor: "#475569",
+    borderBottomLeftRadius: 4,
   },
 
   // Drag Indicators

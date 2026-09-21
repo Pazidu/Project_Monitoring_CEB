@@ -15,6 +15,7 @@ import {
   Checkbox,
   Avatar,
   Card,
+  useTheme,
 } from "react-native-paper";
 import Slider from "@react-native-community/slider";
 
@@ -70,7 +71,7 @@ export const CreateFlowModal = ({
   const defaultCode = isSubFlow
     ? `${parentFlow.index || 1}.${(parentFlow.children?.length || 0) + 1}`
     : `${totalFlowsCount + 1}`;
-
+  const theme = useTheme();
   const [flowCode, setFlowCode] = useState(defaultCode);
   const [stageNumber, setStageNumber] = useState(defaultCode);
   const [flowName, setFlowName] = useState("");
@@ -256,7 +257,12 @@ export const CreateFlowModal = ({
       <TouchableWithoutFeedback onPress={closeDropdowns}>
         <View style={modalStyles.overlay}>
           <TouchableWithoutFeedback>
-            <View style={modalStyles.container}>
+            <View
+              style={[
+                modalStyles.container,
+                { backgroundColor: theme.colors.background },
+              ]}
+            >
               {/* Header */}
               <View style={modalStyles.header}>
                 <View style={modalStyles.headerTitleRow}>
@@ -264,7 +270,6 @@ export const CreateFlowModal = ({
                     <IconButton
                       icon="sitemap"
                       size={18}
-                      iconColor="#0F172A"
                       style={{ margin: 0 }}
                     />
                   </View>
@@ -284,9 +289,9 @@ export const CreateFlowModal = ({
                 >
                   <IconButton
                     icon="close"
-                    size={18}
-                    iconColor="#64748B"
+                    size={20}
                     style={{ margin: 0 }}
+                    color={theme.colors.backgroundInverse}
                   />
                 </TouchableOpacity>
               </View>
@@ -449,7 +454,6 @@ export const CreateFlowModal = ({
                         right={
                           <TextInput.Icon
                             icon="calendar-month-outline"
-                            color="#0F172A"
                             size={18}
                             onPress={() => openDatePicker("start")}
                           />
@@ -478,7 +482,6 @@ export const CreateFlowModal = ({
                         right={
                           <TextInput.Icon
                             icon="calendar-month-outline"
-                            color="#0F172A"
                             size={18}
                             onPress={() => openDatePicker("end")}
                           />
@@ -501,6 +504,7 @@ export const CreateFlowModal = ({
                       activeOpacity={0.8}
                       style={[
                         modalStyles.dropdownSelectBox,
+                        { borderColor: theme.colors.backgroundInverse },
                         stageDropdownOpen &&
                           modalStyles.dropdownSelectBoxActive,
                       ]}
@@ -515,7 +519,6 @@ export const CreateFlowModal = ({
                       <IconButton
                         icon={stageDropdownOpen ? "chevron-up" : "chevron-down"}
                         size={18}
-                        iconColor="#0F172A"
                         style={{ margin: 0 }}
                       />
                     </TouchableOpacity>
@@ -528,8 +531,10 @@ export const CreateFlowModal = ({
                             <TouchableOpacity
                               key={item}
                               activeOpacity={0.7}
+                              color={theme.colors.textColor}
                               style={[
                                 modalStyles.dropdownMenuItem,
+                                { backgroundColor: theme.colors.background },
                                 isSelected &&
                                   modalStyles.dropdownMenuItemSelected,
                               ]}
@@ -558,6 +563,7 @@ export const CreateFlowModal = ({
                       activeOpacity={0.8}
                       style={[
                         modalStyles.dropdownSelectBox,
+                        { borderColor: theme.colors.backgroundInverse },
                         approvalDropdownOpen &&
                           modalStyles.dropdownSelectBoxActive,
                       ]}
@@ -574,7 +580,6 @@ export const CreateFlowModal = ({
                           approvalDropdownOpen ? "chevron-up" : "chevron-down"
                         }
                         size={18}
-                        iconColor="#0F172A"
                         style={{ margin: 0 }}
                       />
                     </TouchableOpacity>
@@ -589,6 +594,7 @@ export const CreateFlowModal = ({
                               activeOpacity={0.7}
                               style={[
                                 modalStyles.dropdownMenuItem,
+                                { backgroundColor: theme.colors.background },
                                 isSelected &&
                                   modalStyles.dropdownMenuItemSelected,
                               ]}
@@ -627,9 +633,8 @@ export const CreateFlowModal = ({
                       step={1}
                       value={stageProgress}
                       onValueChange={handleProgressChange}
-                      minimumTrackTintColor="#0F172A"
+                      minimumTrackTintColor="#6a94f5"
                       maximumTrackTintColor="#E2E8F0"
-                      thumbTintColor="#0F172A"
                     />
                     <TextInput
                       value={String(stageProgress)}
@@ -677,16 +682,26 @@ export const CreateFlowModal = ({
                 >
                   <Text style={modalStyles.cancelBtnText}>Cancel</Text>
                 </TouchableOpacity>
+
                 <TouchableOpacity
                   onPress={handleCreate}
                   style={[
                     modalStyles.createBtn,
+                    { backgroundColor: theme.colors.backgroundInverse },
+
                     !flowName.trim() && modalStyles.disabledBtn,
                   ]}
                   disabled={!flowName.trim()}
                   activeOpacity={0.8}
                 >
-                  <Text style={modalStyles.createBtnText}>Create Flow</Text>
+                  <Text
+                    style={[
+                      modalStyles.createBtnText,
+                      { color: theme.colors.background },
+                    ]}
+                  >
+                    Create Flow
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -759,7 +774,7 @@ export const CreateFlowModal = ({
                   <TouchableOpacity
                     onPress={() => setPersonPickerVisible(false)}
                   >
-                    <IconButton icon="close" size={18} iconColor="#64748B" />
+                    <IconButton icon="close" size={18} />
                   </TouchableOpacity>
                 </View>
 
@@ -771,7 +786,6 @@ export const CreateFlowModal = ({
                     value={personSearchQuery}
                     onChangeText={setPersonSearchQuery}
                     left={<TextInput.Icon icon="magnify" color="#64748B" />}
-                    outlineColor="#CBD5E1"
                     activeOutlineColor="#0F172A"
                     style={modalStyles.pickerSearchInput}
                     dense
@@ -820,10 +834,20 @@ export const CreateFlowModal = ({
 
                 <View style={modalStyles.pickerFooter}>
                   <TouchableOpacity
-                    style={modalStyles.pickerDoneBtn}
+                    style={[
+                      modalStyles.pickerDoneBtn,
+                      { backgroundColor: theme.colors.backgroundInverse },
+                    ]}
                     onPress={() => setPersonPickerVisible(false)}
                   >
-                    <Text style={modalStyles.pickerDoneBtnText}>Done</Text>
+                    <Text
+                      style={[
+                        modalStyles.pickerDoneBtnText,
+                        { color: theme.colors.background },
+                      ]}
+                    >
+                      Done
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </Card>
@@ -844,7 +868,6 @@ const modalStyles = StyleSheet.create({
     padding: 16,
   },
   container: {
-    backgroundColor: "#FFFFFF",
     borderRadius: 14,
     width: "100%",
     maxWidth: 580,
@@ -862,7 +885,6 @@ const modalStyles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
   },
   headerTitleRow: {
     flexDirection: "row",
@@ -873,16 +895,13 @@ const modalStyles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 8,
-    backgroundColor: "#F8FAFC",
     borderWidth: 1,
-    borderColor: "#E2E8F0",
     justifyContent: "center",
     alignItems: "center",
   },
   title: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#0F172A",
     letterSpacing: -0.2,
   },
   subtitle: {
@@ -926,24 +945,20 @@ const modalStyles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#334155",
     marginBottom: 2,
   },
   required: {
     color: "#EF4444",
   },
   disabledInput: {
-    backgroundColor: "#F8FAFC",
     fontSize: 13,
     height: 40,
   },
   input: {
-    backgroundColor: "#FFFFFF",
     fontSize: 13,
     height: 40,
   },
   textArea: {
-    backgroundColor: "#FFFFFF",
     fontSize: 13,
   },
   triggerInput: {
@@ -954,7 +969,6 @@ const modalStyles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 10,
     height: 40,
-    backgroundColor: "#FFFFFF",
   },
   triggerText: {
     fontSize: 13,
@@ -989,12 +1003,10 @@ const modalStyles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     borderWidth: 1,
-    borderColor: "#CBD5E1",
     borderRadius: 8,
     height: 40,
     paddingLeft: 12,
     paddingRight: 4,
-    backgroundColor: "#FFFFFF",
   },
   dropdownSelectBoxActive: {
     borderColor: "#2563EB",
@@ -1002,14 +1014,12 @@ const modalStyles = StyleSheet.create({
   dropdownSelectText: {
     fontSize: 13,
     fontWeight: "500",
-    color: "#0F172A",
   },
   dropdownMenu: {
     position: "absolute",
     top: 68,
     left: 0,
     right: 0,
-    backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: "#CBD5E1",
     borderRadius: 8,
@@ -1024,14 +1034,12 @@ const modalStyles = StyleSheet.create({
   dropdownMenuItem: {
     paddingVertical: 10,
     paddingHorizontal: 14,
-    backgroundColor: "#FFFFFF",
   },
   dropdownMenuItemSelected: {
     backgroundColor: "#2563EB",
   },
   dropdownMenuItemText: {
     fontSize: 13,
-    color: "#1E293B",
   },
   dropdownMenuItemTextSelected: {
     color: "#FFFFFF",
@@ -1050,7 +1058,6 @@ const modalStyles = StyleSheet.create({
   progressValText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#0F172A",
   },
   sliderContainer: {
     flexDirection: "row",
@@ -1060,7 +1067,6 @@ const modalStyles = StyleSheet.create({
   progressBoxInput: {
     width: 55,
     height: 38,
-    backgroundColor: "#FFFFFF",
     textAlign: "center",
     fontSize: 12,
   },
@@ -1070,10 +1076,7 @@ const modalStyles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 14,
-    borderTopWidth: 1,
-    borderTopColor: "#F1F5F9",
     gap: 10,
-    backgroundColor: "#FFFFFF",
   },
   cancelBtn: {
     paddingHorizontal: 16,
@@ -1085,7 +1088,6 @@ const modalStyles = StyleSheet.create({
   cancelBtnText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#334155",
   },
   createBtn: {
     backgroundColor: "#0F172A",
@@ -1099,7 +1101,6 @@ const modalStyles = StyleSheet.create({
   createBtnText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#FFFFFF",
   },
   pickerOverlay: {
     flex: 1,
@@ -1109,7 +1110,6 @@ const modalStyles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   pickerCard: {
-    backgroundColor: "#FFFFFF",
     borderRadius: 14,
     width: "100%",
     maxWidth: 420,
@@ -1128,15 +1128,14 @@ const modalStyles = StyleSheet.create({
   pickerTitle: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#0F172A",
   },
   pickerSearchContainer: {
     paddingHorizontal: 12,
     paddingBottom: 8,
   },
   pickerSearchInput: {
-    backgroundColor: "#FFFFFF",
     fontSize: 13,
+    borderRadius: 20,
   },
   pickerList: {
     maxHeight: 220,
@@ -1146,9 +1145,6 @@ const modalStyles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 8,
     paddingHorizontal: 12,
-  },
-  personRowSelected: {
-    backgroundColor: "#F8FAFC",
   },
   personAvatar: {
     backgroundColor: "#F1F5F9",
@@ -1160,7 +1156,6 @@ const modalStyles = StyleSheet.create({
   personName: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#0F172A",
   },
   personRole: {
     fontSize: 11,
@@ -1168,18 +1163,14 @@ const modalStyles = StyleSheet.create({
   },
   pickerFooter: {
     padding: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#F1F5F9",
     alignItems: "flex-end",
   },
   pickerDoneBtn: {
-    backgroundColor: "#0F172A",
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 6,
   },
   pickerDoneBtnText: {
-    color: "#FFFFFF",
     fontSize: 12,
     fontWeight: "600",
   },
