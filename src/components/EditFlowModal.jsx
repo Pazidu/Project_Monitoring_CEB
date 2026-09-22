@@ -14,6 +14,7 @@ import {
   Chip,
   IconButton,
   Checkbox,
+  useTheme,
 } from "react-native-paper";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
@@ -48,6 +49,7 @@ export const EditFlowModal = ({
   onDelete,
 }) => {
   // Form State
+  const theme = useTheme();
   const [flowCode, setFlowCode] = useState("");
   const [stageNumber, setStageNumber] = useState("");
   const [flowName, setFlowName] = useState("");
@@ -205,7 +207,12 @@ export const EditFlowModal = ({
       onRequestClose={onDismiss}
     >
       <View style={styles.overlay}>
-        <View style={styles.modalCard}>
+        <View
+          style={[
+            styles.modalCard,
+            { backgroundColor: theme.colors.background },
+          ]}
+        >
           {/* Header */}
           <View style={styles.headerRow}>
             <View style={styles.headerTitleGroup}>
@@ -213,7 +220,6 @@ export const EditFlowModal = ({
                 <IconButton
                   icon="sitemap-outline"
                   size={20}
-                  iconColor="#0F172A"
                   style={styles.noMarginIcon}
                 />
               </View>
@@ -528,8 +534,6 @@ export const EditFlowModal = ({
             </View>
           </ScrollView>
 
-          <View style={styles.divider} />
-
           {/* Footer Actions */}
           <View style={styles.footerRow}>
             <TouchableOpacity
@@ -549,8 +553,14 @@ export const EditFlowModal = ({
               <Button
                 mode="contained"
                 onPress={handleSave}
-                style={styles.saveBtn}
-                labelStyle={styles.saveBtnText}
+                style={[
+                  styles.saveBtn,
+                  { backgroundColor: theme.colors.backgroundInverse },
+                ]}
+                labelStyle={[
+                  styles.saveBtnText,
+                  { color: theme.colors.background },
+                ]}
               >
                 Save Changes
               </Button>
@@ -716,7 +726,6 @@ const styles = StyleSheet.create({
   modalCard: {
     width: "100%",
     maxHeight: "90%",
-    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     paddingVertical: 16,
     elevation: 8,
@@ -740,7 +749,6 @@ const styles = StyleSheet.create({
   headerIconContainer: {
     width: 36,
     height: 36,
-    backgroundColor: "#F1F5F9",
     borderRadius: 8,
     marginRight: 12,
     justifyContent: "center",
@@ -752,7 +760,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: "700",
-    color: "#0F172A",
     letterSpacing: -0.3,
   },
   headerSubtitle: {
@@ -764,15 +771,13 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: "#F1F5F9",
     justifyContent: "center",
     alignItems: "center",
     marginLeft: 8,
   },
   closeIconText: {
-    fontSize: 14,
+    fontSize: 20,
     fontWeight: "600",
-    color: "#64748B",
   },
   divider: {
     height: 1,
@@ -802,23 +807,20 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#334155",
     marginBottom: 6,
   },
   required: {
     color: "#EF4444",
   },
   inputBg: {
-    backgroundColor: "#FFFFFF",
     fontSize: 13,
     height: 40,
   },
   inputBgMultiline: {
-    backgroundColor: "#FFFFFF",
     fontSize: 13,
+    marginBottom: 8,
   },
   inputDisabled: {
-    backgroundColor: "#F8FAFC",
     fontSize: 13,
     height: 40,
   },
@@ -833,13 +835,11 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   chip: {
-    backgroundColor: "#F1F5F9",
     height: 30,
     borderRadius: 6,
   },
   chipText: {
     fontSize: 12,
-    color: "#0F172A",
   },
   clearAllBtn: {
     paddingLeft: 8,
@@ -856,7 +856,6 @@ const styles = StyleSheet.create({
     lineHeight: 15,
   },
   infoBox: {
-    backgroundColor: "#F8FAFC",
     borderWidth: 1,
     borderColor: "#E2E8F0",
     borderRadius: 8,
@@ -865,7 +864,6 @@ const styles = StyleSheet.create({
   },
   infoBoxText: {
     fontSize: 11,
-    color: "#475569",
     lineHeight: 15,
   },
   footerRow: {
@@ -878,9 +876,8 @@ const styles = StyleSheet.create({
   deleteButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FEF2F2",
     borderWidth: 1,
-    borderColor: "#FCA5A5",
+    borderColor: "#ff4646",
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 8,
@@ -901,7 +898,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   saveBtnText: {
-    color: "#FFFFFF",
     fontWeight: "600",
     fontSize: 13,
   },

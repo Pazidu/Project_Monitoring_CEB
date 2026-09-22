@@ -14,6 +14,7 @@ import {
   Chip,
   IconButton,
   Checkbox,
+  useTheme,
 } from "react-native-paper";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Slider from "@react-native-community/slider";
@@ -48,6 +49,7 @@ export const CreateSubFlowModal = ({
   onCreateSubFlow,
 }) => {
   // Form State
+  const theme = useTheme();
   const [flowCode, setFlowCode] = useState("");
   const [stageNumber, setStageNumber] = useState("");
   const [flowName, setFlowName] = useState("");
@@ -175,7 +177,12 @@ export const CreateSubFlowModal = ({
       onRequestClose={onDismiss}
     >
       <View style={styles.overlay}>
-        <View style={styles.modalCard}>
+        <View
+          style={[
+            styles.modalCard,
+            { backgroundColor: theme.colors.background },
+          ]}
+        >
           {/* Header */}
           <View style={styles.headerRow}>
             <View style={styles.headerTitleGroup}>
@@ -183,7 +190,6 @@ export const CreateSubFlowModal = ({
                 <IconButton
                   icon="sitemap-outline"
                   size={20}
-                  iconColor="#0F172A"
                   style={styles.noMarginIcon}
                 />
               </View>
@@ -191,7 +197,7 @@ export const CreateSubFlowModal = ({
                 <Text style={styles.headerTitle}>Create Project Flow</Text>
                 <Text style={styles.headerSubtitle}>
                   Create a new flow under:{" "}
-                  <Text style={styles.parentNameText}>
+                  <Text style={[styles.parentNameText]}>
                     {parentFlow?.name || parentFlow?.title || "Parent Stage"}
                   </Text>
                 </Text>
@@ -489,9 +495,8 @@ export const CreateSubFlowModal = ({
                   step={1}
                   value={progress}
                   onValueChange={handleProgressChange}
-                  minimumTrackTintColor="#0F172A"
-                  maximumTrackTintColor="#F1F5F9"
-                  thumbTintColor="#0F172A"
+                  minimumTrackTintColor="#6a94f5"
+                  maximumTrackTintColor="#E2E8F0"
                 />
                 <TextInput
                   value={String(progress)}
@@ -526,7 +531,10 @@ export const CreateSubFlowModal = ({
               mode="outlined"
               onPress={onDismiss}
               style={styles.cancelBtn}
-              labelStyle={styles.cancelBtnText}
+              labelStyle={[
+                styles.cancelBtnText,
+                { color: theme.colors.textColor },
+              ]}
             >
               Cancel
             </Button>
@@ -537,8 +545,12 @@ export const CreateSubFlowModal = ({
               style={[
                 styles.saveBtn,
                 !flowName.trim() && styles.saveBtnDisabled,
+                { backgroundColor: theme.colors.backgroundInverse },
               ]}
-              labelStyle={styles.saveBtnText}
+              labelStyle={[
+                styles.saveBtnText,
+                { color: theme.colors.background },
+              ]}
             >
               Create Flow
             </Button>
@@ -553,7 +565,12 @@ export const CreateSubFlowModal = ({
           onRequestClose={() => setIsAssigneeModalVisible(false)}
         >
           <View style={styles.subModalOverlay}>
-            <View style={styles.assigneeDialogCard}>
+            <View
+              style={[
+                styles.assigneeDialogCard,
+                { backgroundColor: theme.colors.background },
+              ]}
+            >
               <View style={styles.assigneeHeader}>
                 <Text style={styles.assigneeTitle}>Select Assignees</Text>
                 <TouchableOpacity
@@ -596,7 +613,6 @@ export const CreateSubFlowModal = ({
                       <Checkbox.Android
                         status={isSelected ? "checked" : "unchecked"}
                         onPress={() => handleTogglePerson(user)}
-                        color="#0F172A"
                         style={styles.checkboxStyle}
                       />
                       <View style={styles.avatarCircle}>
@@ -620,7 +636,10 @@ export const CreateSubFlowModal = ({
                 <Button
                   mode="contained"
                   onPress={() => setIsAssigneeModalVisible(false)}
-                  style={styles.doneBtn}
+                  style={[
+                    styles.doneBtn,
+                    { backgroundColor: theme.colors.backgroundInverse },
+                  ]}
                   labelStyle={styles.doneBtnText}
                 >
                   Done
@@ -703,7 +722,6 @@ const styles = StyleSheet.create({
   modalCard: {
     width: "100%",
     maxHeight: "90%",
-    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     paddingVertical: 16,
     elevation: 8,
@@ -727,7 +745,6 @@ const styles = StyleSheet.create({
   headerIconContainer: {
     width: 36,
     height: 36,
-    backgroundColor: "#F1F5F9",
     borderRadius: 8,
     marginRight: 12,
     justifyContent: "center",
@@ -739,7 +756,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: "700",
-    color: "#0F172A",
     letterSpacing: -0.3,
   },
   headerSubtitle: {
@@ -748,22 +764,20 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   parentNameText: {
+    color: "#64748B",
     fontWeight: "700",
-    color: "#0F172A",
   },
   topRightCloseBtn: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: "#F1F5F9",
     justifyContent: "center",
     alignItems: "center",
     marginLeft: 8,
   },
   closeIconText: {
-    fontSize: 14,
+    fontSize: 20,
     fontWeight: "600",
-    color: "#64748B",
   },
   divider: {
     height: 1,
@@ -793,23 +807,19 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#334155",
     marginBottom: 6,
   },
   required: {
     color: "#EF4444",
   },
   inputBg: {
-    backgroundColor: "#FFFFFF",
     fontSize: 13,
     height: 40,
   },
   inputBgMultiline: {
-    backgroundColor: "#FFFFFF",
     fontSize: 13,
   },
   inputDisabled: {
-    backgroundColor: "#F8FAFC",
     fontSize: 13,
     height: 40,
   },
@@ -848,7 +858,6 @@ const styles = StyleSheet.create({
   progressPercentText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#0F172A",
   },
   sliderControlRow: {
     flexDirection: "row",
@@ -862,7 +871,6 @@ const styles = StyleSheet.create({
   progressBoxInput: {
     width: 50,
     height: 36,
-    backgroundColor: "#FFFFFF",
     fontSize: 12,
     textAlign: "center",
   },
@@ -870,6 +878,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "#64748B",
     marginTop: 4,
+    marginBottom: 10,
     lineHeight: 15,
   },
   footerRowRight: {
@@ -897,7 +906,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#94A3B8",
   },
   saveBtnText: {
-    color: "#FFFFFF",
     fontWeight: "600",
     fontSize: 13,
   },
@@ -916,7 +924,8 @@ const styles = StyleSheet.create({
   assigneeDialogCard: {
     width: "100%",
     maxWidth: 380,
-    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
     borderRadius: 16,
     padding: 16,
     elevation: 10,
@@ -934,18 +943,15 @@ const styles = StyleSheet.create({
   assigneeTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#0F172A",
   },
   assigneeCloseBtn: {
-    fontSize: 16,
-    color: "#64748B",
+    fontSize: 18,
     fontWeight: "600",
   },
   assigneeSearchWrapper: {
     marginBottom: 12,
   },
   assigneeSearchInput: {
-    backgroundColor: "#FFFFFF",
     fontSize: 13,
     height: 38,
   },
@@ -976,7 +982,6 @@ const styles = StyleSheet.create({
   assigneeNameText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#0F172A",
   },
   assigneeRoleText: {
     fontSize: 11,
@@ -988,12 +993,10 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
   },
   doneBtn: {
-    backgroundColor: "#0F172A",
     borderRadius: 8,
     paddingHorizontal: 12,
   },
   doneBtnText: {
-    color: "#FFFFFF",
     fontSize: 13,
     fontWeight: "600",
   },

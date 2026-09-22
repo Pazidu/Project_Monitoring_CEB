@@ -1,7 +1,7 @@
 // FlowMapModal.jsx
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { View, StyleSheet, Modal, TouchableOpacity, Alert } from "react-native";
-import { Text, IconButton, Button } from "react-native-paper";
+import { Text, IconButton, Button, useTheme } from "react-native-paper";
 import { WebView } from "react-native-webview";
 import { DrawingStore } from "../data/drawingStore.js";
 
@@ -11,6 +11,7 @@ export const FlowMapModal = ({
   onDismiss,
   onSaveDrawings,
 }) => {
+  const theme = useTheme();
   const webViewRef = useRef(null);
   const [currentDrawings, setCurrentDrawings] = useState([]);
   const isLocalActionRef = useRef(false);
@@ -394,13 +395,18 @@ export const FlowMapModal = ({
       onRequestClose={onDismiss}
     >
       <View style={styles.overlay}>
-        <View style={styles.modalContainer}>
+        <View
+          style={[
+            styles.modalContainer,
+            { backgroundColor: theme.colors.background },
+          ]}
+        >
           <View style={styles.headerContainer}>
             <View style={styles.headerLeft}>
               <View style={styles.iconBadge}>
                 <IconButton
                   icon="map-marker-outline"
-                  size={18}
+                  size={30}
                   iconColor="#2563EB"
                   style={styles.zeroMargin}
                 />
@@ -419,12 +425,7 @@ export const FlowMapModal = ({
               style={styles.closeIconButton}
               activeOpacity={0.7}
             >
-              <IconButton
-                icon="close"
-                size={18}
-                iconColor="#64748B"
-                style={styles.zeroMargin}
-              />
+              <IconButton icon="close" size={18} style={styles.zeroMargin} />
             </TouchableOpacity>
           </View>
 
@@ -465,9 +466,11 @@ export const FlowMapModal = ({
 
             <Button
               mode="contained"
-              buttonColor="#0F172A"
-              textColor="#FFFFFF"
-              style={styles.saveBtn}
+              textColor={theme.colors.background}
+              style={[
+                styles.saveBtn,
+                { backgroundColor: theme.colors.backgroundInverse },
+              ]}
               labelStyle={styles.saveBtnLabel}
               onPress={handleSave}
             >
@@ -493,7 +496,6 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 520,
     maxHeight: "90%",
-    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     overflow: "hidden",
     elevation: 8,
@@ -516,33 +518,30 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: "#EFF6FF",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 10,
   },
   headerTitleGroup: { flex: 1 },
-  headerTitle: { fontSize: 15, fontWeight: "700", color: "#0F172A" },
+  headerTitle: { fontSize: 15, fontWeight: "700" },
   flowCodeText: { fontSize: 12, color: "#64748B", marginTop: 1 },
   boldCode: { fontWeight: "600", color: "#2563EB" },
   closeIconButton: {
-    width: 28,
-    height: 28,
+    width: 35,
+    height: 35,
     borderRadius: 14,
-    backgroundColor: "#F1F5F9",
     justifyContent: "center",
     alignItems: "center",
   },
   zeroMargin: { margin: 0, padding: 0 },
   statusBanner: {
-    backgroundColor: "#F8FAFC",
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderTopWidth: 1,
     borderBottomWidth: 1,
     borderColor: "#E2E8F0",
   },
-  statusBannerText: { fontSize: 11, color: "#64748B", fontWeight: "500" },
+  statusBannerText: { fontSize: 11, fontWeight: "500" },
   mapFrame: { height: 420, backgroundColor: "#F1F5F9" },
   webView: { flex: 1 },
   footerContainer: {
@@ -551,9 +550,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: "#FFFFFF",
     borderTopWidth: 1,
-    borderTopColor: "#E2E8F0",
   },
   clearBtn: { borderColor: "#FCA5A5", borderRadius: 8 },
   clearBtnLabel: { fontSize: 12, fontWeight: "600" },

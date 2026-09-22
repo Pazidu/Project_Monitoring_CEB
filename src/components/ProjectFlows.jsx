@@ -348,10 +348,16 @@ export const ProjectFlows = ({
               <View
                 style={[
                   flowStyles.verticalTreeLine,
+                  { backgroundColor: theme.colors.backgroundInverse },
                   isLastChild && flowStyles.verticalTreeLineHalf,
                 ]}
               />
-              <View style={flowStyles.horizontalTreeBranch} />
+              <View
+                style={[
+                  flowStyles.horizontalTreeBranch,
+                  { backgroundColor: theme.colors.backgroundInverse },
+                ]}
+              />
             </View>
           )}
 
@@ -862,7 +868,6 @@ const flowStyles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: 2,
-    backgroundColor: "#fefefe",
   },
   verticalTreeLineHalf: {
     height: 32,
@@ -874,7 +879,6 @@ const flowStyles = StyleSheet.create({
     top: 30,
     width: 14,
     height: 2,
-    backgroundColor: "#475569",
     borderBottomLeftRadius: 4,
   },
 
