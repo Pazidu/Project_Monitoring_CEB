@@ -17,6 +17,7 @@ import {
   IconButton,
   Chip,
   HelperText,
+  useTheme,
 } from "react-native-paper";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -128,6 +129,7 @@ export const CreateReportModal = ({
   onCreate,
   project,
 }) => {
+  const theme = useTheme();
   const [reportName, setReportName] = useState("Standard project report");
   const [reportTitle, setReportTitle] = useState(
     `${project?.code || "CEB-XX-2026-666445"} — Project Status Report`,
@@ -225,7 +227,10 @@ export const CreateReportModal = ({
       <Modal
         visible={visible}
         onDismiss={onDismiss}
-        contentContainerStyle={styles.modalCardContainer}
+        contentContainerStyle={[
+          styles.modalCardContainer,
+          { backgroundColor: theme.colors.background },
+        ]}
       >
         {/* Header */}
         <View style={styles.headerRow}>
@@ -242,7 +247,6 @@ export const CreateReportModal = ({
             size={20}
             onPress={onDismiss}
             style={styles.closeBtn}
-            iconColor="#6B7280"
           />
         </View>
 
@@ -261,7 +265,10 @@ export const CreateReportModal = ({
                 onChangeText={setReportName}
                 dense
                 outlineStyle={styles.textInputOutline}
-                style={styles.textInputStyle}
+                style={[
+                  styles.textInputStyle,
+                  { backgroundColor: theme.colors.activeTabBackground },
+                ]}
                 activeOutlineColor="#2563EB"
               />
             </View>
@@ -274,7 +281,10 @@ export const CreateReportModal = ({
                 onChangeText={setReportTitle}
                 dense
                 outlineStyle={styles.textInputOutline}
-                style={styles.textInputStyle}
+                style={[
+                  styles.textInputStyle,
+                  { backgroundColor: theme.colors.activeTabBackground },
+                ]}
                 activeOutlineColor="#2563EB"
               />
             </View>
@@ -289,9 +299,10 @@ export const CreateReportModal = ({
               <TouchableOpacity onPress={handleSelectAll} activeOpacity={0.6}>
                 <Text style={styles.actionTextBtn}>Select all</Text>
               </TouchableOpacity>
-              <Text style={styles.dividerDot}>•</Text>
               <TouchableOpacity onPress={handleClearAll} activeOpacity={0.6}>
-                <Text style={styles.actionTextBtn}>Clear</Text>
+                <Text style={[styles.actionTextBtn, { color: "#ff4343" }]}>
+                  Clear
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -343,16 +354,6 @@ export const CreateReportModal = ({
                   onPress={() => handleToggleGroup(groupName)}
                 >
                   <Text style={styles.groupTitleHeader}>{groupName}</Text>
-                  <Chip
-                    compact
-                    style={[
-                      styles.groupChip,
-                      isAllGroupSelected && styles.groupChipActive,
-                    ]}
-                    textStyle={styles.groupChipText}
-                  >
-                    {selectedInGroup}/{groupItems.length}
-                  </Chip>
                 </TouchableOpacity>
 
                 {/* Section Cards */}
@@ -362,7 +363,13 @@ export const CreateReportModal = ({
                     activeOpacity={0.8}
                     style={[
                       styles.checkboxCard,
+                      { backgroundColor: theme.colors.background },
                       item.selected && styles.checkboxCardSelected,
+                      {
+                        backgroundColor: item.selected
+                          ? theme.colors.activeTabBackground
+                          : theme.colors.background,
+                      },
                     ]}
                     onPress={() => handleToggleSection(item.id)}
                   >
@@ -376,6 +383,7 @@ export const CreateReportModal = ({
                       <Text
                         style={[
                           styles.checkboxLabelText,
+                          { color: theme.colors.backgroundInverse },
                           item.selected && styles.checkboxLabelSelected,
                         ]}
                       >
@@ -398,13 +406,17 @@ export const CreateReportModal = ({
             <Text style={styles.inputLabel}>Cover note (optional)</Text>
             <TextInput
               mode="outlined"
-              placeholder="Printed at the end of the report"
+              // placeholder="Printed at the end of the report"
               value={coverNote}
               onChangeText={setCoverNote}
               multiline
               numberOfLines={3}
               outlineStyle={styles.textInputOutline}
-              style={[styles.textInputStyle, { minHeight: 68 }]}
+              style={[
+                styles.textInputStyle,
+                { minHeight: 68 },
+                { backgroundColor: theme.colors.activeTabBackground },
+              ]}
               activeOutlineColor="#2563EB"
             />
           </View>
@@ -416,7 +428,7 @@ export const CreateReportModal = ({
             mode="outlined"
             onPress={onDismiss}
             style={styles.cancelBtn}
-            textColor="#374151"
+            textColor={theme.colors.backgroundInverse}
           >
             Cancel
           </Button>
@@ -424,8 +436,8 @@ export const CreateReportModal = ({
             mode="contained"
             icon="file-document-outline"
             onPress={handleCreateSubmit}
-            buttonColor="#111827"
-            textColor="#FFFFFF"
+            buttonColor={theme.colors.backgroundInverse}
+            textColor={theme.colors.background}
             style={styles.submitBtn}
           >
             Create report
@@ -438,7 +450,6 @@ export const CreateReportModal = ({
 
 const styles = StyleSheet.create({
   modalCardContainer: {
-    backgroundColor: "#FFFFFF",
     marginHorizontal: 16,
     borderRadius: 16,
     maxHeight: SCREEN_HEIGHT * 0.88,
@@ -456,15 +467,15 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   titleSubtitleBox: { flex: 1, paddingRight: 8 },
-  headerTitle: { fontWeight: "700", fontSize: 18, color: "#111827" },
+  headerTitle: { fontWeight: "700", fontSize: 18 },
   headerSubtitle: { color: "#6B7280", marginTop: 2, lineHeight: 16 },
   closeBtn: { margin: -6 },
   scrollArea: { flexShrink: 1 },
   inputGroupContainer: { gap: 12, marginBottom: 14 },
   fieldBox: { gap: 4 },
-  inputLabel: { fontSize: 12, fontWeight: "600", color: "#374151" },
+  inputLabel: { fontSize: 12, fontWeight: "600" },
   textInputOutline: { borderColor: "#E5E7EB", borderRadius: 8 },
-  textInputStyle: { backgroundColor: "#FFFFFF", fontSize: 13 },
+  textInputStyle: { fontSize: 13, placeholderTextColor: "#9CA3AF", padding: 6 },
   sectionHeaderRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -472,13 +483,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 4,
   },
-  sectionsTitleText: { fontWeight: "700", fontSize: 14, color: "#111827" },
-  selectAllClearRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  sectionsTitleText: { fontWeight: "700", fontSize: 14 },
+  selectAllClearRow: { flexDirection: "row", alignItems: "center", gap: 15 },
   actionTextBtn: { fontSize: 12, color: "#2563EB", fontWeight: "600" },
   dividerDot: { color: "#9CA3AF" },
   searchOutline: { borderColor: "#F3F4F6", borderRadius: 8 },
   searchInput: {
-    backgroundColor: "#F9FAFB",
     fontSize: 12,
     height: 40,
     marginBottom: 4,
@@ -509,15 +519,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "#F3F4F6",
-    backgroundColor: "#FAFAFA",
   },
   checkboxCardSelected: {
     borderColor: "#BFDBFE",
     backgroundColor: "#F0F9FF",
   },
   checkboxTextContent: { flex: 1, paddingLeft: 4 },
-  checkboxLabelText: { fontSize: 13, fontWeight: "500", color: "#374151" },
-  checkboxLabelSelected: { fontWeight: "600", color: "#1D4ED8" },
+  checkboxLabelText: { fontSize: 13, fontWeight: "500" },
+  checkboxLabelSelected: { fontWeight: "600" },
   checkboxDescText: { fontSize: 11, color: "#6B7280", marginTop: 1 },
   footerRow: {
     flexDirection: "row",
@@ -525,8 +534,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: "#F3F4F6",
     marginTop: 10,
   },
   cancelBtn: { borderRadius: 8, borderColor: "#D1D5DB" },

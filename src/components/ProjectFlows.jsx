@@ -364,6 +364,7 @@ export const ProjectFlows = ({
           <Animated.View
             style={[
               flowStyles.flowCard,
+              { backgroundColor: theme.colors.background },
               isSubFlow && flowStyles.subFlowCard,
               isDraggingThis && [
                 flowStyles.draggingCard,
@@ -375,7 +376,7 @@ export const ProjectFlows = ({
             <View
               style={[
                 flowStyles.cardMainContent,
-                { backgroundColor: theme.colors.surface },
+                { backgroundColor: theme.colors.background },
               ]}
             >
               {/* Top Bar: Reorder, Expand, Badge & Title */}
@@ -688,8 +689,6 @@ const flowStyles = StyleSheet.create({
   flowCard: {
     flex: 1,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
     marginBottom: 10,
     overflow: "hidden",
     ...Platform.select({
@@ -709,7 +708,7 @@ const flowStyles = StyleSheet.create({
     opacity: 0.9,
     zIndex: 999,
     elevation: 6,
-    shadowColor: "#2563EB",
+
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -717,10 +716,12 @@ const flowStyles = StyleSheet.create({
   subFlowCard: {
     marginLeft: 0,
     marginTop: 0,
-    borderColor: "#898989",
   },
   cardMainContent: {
     padding: 12,
+    borderWidth: 1,
+    borderColor: "#767676",
+    borderRadius: 12,
   },
 
   // Header Section
@@ -852,6 +853,7 @@ const flowStyles = StyleSheet.create({
   subFlowsContainer: {
     paddingTop: 4,
     paddingLeft: 16,
+    backgroundColor: "transparent",
   },
   subFlowItemWrapper: {
     flexDirection: "row",
