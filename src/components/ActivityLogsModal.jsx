@@ -10,7 +10,13 @@ import {
   FlatList,
   TextInput,
 } from "react-native";
-import { Text, IconButton, Avatar, Divider } from "react-native-paper";
+import {
+  Text,
+  IconButton,
+  Avatar,
+  Divider,
+  useTheme,
+} from "react-native-paper";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -101,6 +107,7 @@ const MOCK_LOG_DATA = [
 ];
 
 export const ActivityLogsModal = ({ visible, onDismiss, project }) => {
+  const theme = useTheme();
   const [activeCategory, setActiveCategory] = useState("all");
   const [selectedUser, setSelectedUser] = useState("All users");
   const [searchQuery, setSearchQuery] = useState("");
@@ -216,7 +223,12 @@ export const ActivityLogsModal = ({ visible, onDismiss, project }) => {
       <TouchableWithoutFeedback onPress={() => setIsDropdownOpen(false)}>
         <View style={styles.backdrop}>
           <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
-            <View style={styles.dialogContainer}>
+            <View
+              style={[
+                styles.dialogContainer,
+                { backgroundColor: theme.colors.background },
+              ]}
+            >
               {/* Header Bar */}
               <View style={styles.headerRow}>
                 <View style={styles.headerTitleContainer}>
@@ -234,8 +246,7 @@ export const ActivityLogsModal = ({ visible, onDismiss, project }) => {
                     </Text>
                   </View>
                   <Text variant="bodySmall" style={styles.headerSubtitle}>
-                    {project?.code || "CEB-XX-2026-666445"} ·{" "}
-                    {project?.title || "33 kV Feeder Upgrade"}
+                    {project?.code} · {project?.title}
                   </Text>
                 </View>
 
@@ -247,8 +258,7 @@ export const ActivityLogsModal = ({ visible, onDismiss, project }) => {
                   >
                     <IconButton
                       icon="refresh"
-                      size={15}
-                      iconColor="#4B5563"
+                      size={25}
                       style={styles.noMarginIcon}
                     />
                   </TouchableOpacity>
@@ -259,8 +269,7 @@ export const ActivityLogsModal = ({ visible, onDismiss, project }) => {
                   >
                     <IconButton
                       icon="close"
-                      size={16}
-                      iconColor="#6B7280"
+                      size={25}
                       style={styles.noMarginIcon}
                     />
                   </TouchableOpacity>
@@ -287,8 +296,18 @@ export const ActivityLogsModal = ({ visible, onDismiss, project }) => {
                           setIsDropdownOpen(false);
                           setActiveCategory(cat.key);
                         }}
+                        textColor={
+                          isActive
+                            ? theme.colors.backgroundInverse
+                            : theme.colors.background
+                        }
                         style={[
                           styles.pillButton,
+                          {
+                            backgroundColor: isActive
+                              ? theme.colors.activeTabBackground
+                              : theme.colors.background,
+                          },
                           isActive && styles.activePillButton,
                         ]}
                       >
@@ -506,7 +525,6 @@ const styles = StyleSheet.create({
   dialogContainer: {
     width: "100%",
     height: SCREEN_HEIGHT * 0.88,
-    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     elevation: 12,
     shadowColor: "#0F172A",
@@ -530,33 +548,22 @@ const styles = StyleSheet.create({
   headerTitleContainer: { flex: 1 },
   titleRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   headerIconWrapper: {
-    backgroundColor: "#EFF6FF",
     borderRadius: 6,
     padding: 2,
   },
-  headerTitle: { fontWeight: "700", fontSize: 17, color: "#0F172A" },
+  headerTitle: { fontWeight: "700", fontSize: 17 },
   headerSubtitle: { color: "#64748B", marginTop: 2, fontSize: 11 },
-  headerActions: { flexDirection: "row", alignItems: "center", gap: 6 },
+  headerActions: { flexDirection: "row", marginTop: -30, marginRight: -15 },
   refreshBtn: {
-    padding: 2,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    backgroundColor: "#F8FAFC",
+    padding: 0,
   },
   closeBtnWrapper: {
-    padding: 2,
-    borderRadius: 6,
-    backgroundColor: "#F1F5F9",
+    padding: 0,
   },
-  divider: { backgroundColor: "#F1F5F9" },
 
   // Horizontal Pills
   pillsWrapper: {
     paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
-    backgroundColor: "#FAFAFA",
   },
   pillsContainer: { paddingHorizontal: 16, gap: 6, alignItems: "center" },
   pillButton: {
@@ -565,17 +572,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 18,
-    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  activePillButton: {
-    backgroundColor: "#EFF6FF",
-    borderColor: "#BFDBFE",
   },
   pillIcon: { margin: 0, padding: 0, width: 14, height: 14 },
   pillLabel: { fontSize: 12, color: "#475569", marginHorizontal: 3 },
-  activePillLabel: { color: "#2563EB", fontWeight: "600" },
+  activePillLabel: { fontWeight: "600" },
   countBadge: {
     backgroundColor: "#F1F5F9",
     paddingHorizontal: 5,
@@ -723,7 +724,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
     padding: 12,
     shadowColor: "#0F172A",
     shadowOffset: { width: 0, height: 1 },
@@ -775,7 +775,6 @@ const styles = StyleSheet.create({
   categoryBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F1F5F9",
     borderRadius: 4,
     paddingRight: 6,
     paddingVertical: 1,
@@ -783,7 +782,6 @@ const styles = StyleSheet.create({
   },
   categoryBadgeText: {
     fontSize: 10,
-    color: "#475569",
     fontWeight: "500",
   },
   subLogText: {
