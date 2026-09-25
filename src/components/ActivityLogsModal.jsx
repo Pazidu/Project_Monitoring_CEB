@@ -139,7 +139,15 @@ export const ActivityLogsModal = ({ visible, onDismiss, project }) => {
       </View>
 
       {/* Log Card */}
-      <View style={styles.logCard}>
+      <View
+        style={[
+          styles.logCard,
+          {
+            borderBlockColor: log.statusTextColor,
+            backgroundColor: theme.colors.surface,
+          },
+        ]}
+      >
         {/* Top Header Row: User Info */}
         <View style={styles.cardTopRow}>
           <View style={styles.userInfoGroup}>
@@ -156,7 +164,14 @@ export const ActivityLogsModal = ({ visible, onDismiss, project }) => {
               >
                 {log.user}
               </Text>
-              <Text style={styles.timestampText}>{log.timestamp}</Text>
+              <Text
+                style={[
+                  styles.timestampText,
+                  { color: theme.colors.activeTabBackground },
+                ]}
+              >
+                {log.timestamp}
+              </Text>
             </View>
           </View>
 
@@ -186,7 +201,7 @@ export const ActivityLogsModal = ({ visible, onDismiss, project }) => {
           <View style={styles.categoryBadge}>
             <IconButton
               icon={log.categoryIcon}
-              size={11}
+              size={13}
               iconColor="#4B5563"
               style={styles.noMarginIcon}
             />
@@ -315,7 +330,6 @@ export const ActivityLogsModal = ({ visible, onDismiss, project }) => {
                           <IconButton
                             icon={cat.icon}
                             size={13}
-                            iconColor={isActive ? "#2563EB" : "#6B7280"}
                             style={styles.pillIcon}
                           />
                         )}
@@ -352,15 +366,22 @@ export const ActivityLogsModal = ({ visible, onDismiss, project }) => {
 
               {/* Toolbar Section: Search & User Dropdown */}
               <View style={styles.toolbarContainer}>
-                <View style={styles.searchBarWrapper}>
+                <View
+                  style={[
+                    styles.searchBarWrapper,
+                    { borderColor: theme.colors.backgroundInverse },
+                  ]}
+                  textColor={theme.colors.backgroundInverse}
+                >
                   <IconButton
                     icon="magnify"
                     size={16}
-                    iconColor="#9CA3AF"
+                    iconColor={theme.colors.backgroundInverse}
                     style={styles.noMarginIcon}
                   />
                   <TextInput
-                    style={styles.searchInput}
+                    style={[styles.searchInput]}
+                    textColor={theme.colors.backgroundInverse}
                     placeholder="Search logs..."
                     placeholderTextColor="#9CA3AF"
                     value={searchQuery}
@@ -379,7 +400,12 @@ export const ActivityLogsModal = ({ visible, onDismiss, project }) => {
                 </View>
 
                 {/* Dropdown Anchor */}
-                <View style={styles.dropdownAnchorContainer}>
+                <View
+                  style={[
+                    styles.dropdownAnchorContainer,
+                    { borderColor: theme.colors.backgroundInverse },
+                  ]}
+                >
                   <TouchableOpacity
                     activeOpacity={0.8}
                     style={[
@@ -391,12 +417,12 @@ export const ActivityLogsModal = ({ visible, onDismiss, project }) => {
                     <IconButton
                       icon="account-filter-outline"
                       size={16}
-                      iconColor={isDropdownOpen ? "#2563EB" : "#6B7280"}
                       style={styles.noMarginIcon}
                     />
                     <Text
                       numberOfLines={1}
                       style={[
+                        { borderColor: theme.colors.backgroundInverse },
                         styles.userDropdownText,
                         isDropdownOpen && styles.userDropdownTextActive,
                       ]}
@@ -413,7 +439,12 @@ export const ActivityLogsModal = ({ visible, onDismiss, project }) => {
 
                   {/* Dropdown Menu */}
                   {isDropdownOpen && (
-                    <View style={styles.dropdownMenuOverlay}>
+                    <View
+                      style={[
+                        styles.dropdownMenuOverlay,
+                        { backgroundColor: theme.colors.background },
+                      ]}
+                    >
                       <ScrollView
                         nestedScrollEnabled={true}
                         style={{ maxHeight: 180 }}
@@ -445,7 +476,7 @@ export const ActivityLogsModal = ({ visible, onDismiss, project }) => {
                                 <IconButton
                                   icon="check"
                                   size={14}
-                                  iconColor="#2563EB"
+                                  iconColor={theme.colors.backgroundInverse}
                                   style={styles.noMarginIcon}
                                 />
                               )}
@@ -460,7 +491,12 @@ export const ActivityLogsModal = ({ visible, onDismiss, project }) => {
 
               {/* Feed & Timeline Container */}
               <View style={styles.feedFlexContainer}>
-                <View style={styles.timelineLine} />
+                <View
+                  style={[
+                    styles.timelineLine,
+                    { backgroundColor: theme.colors.backgroundInverse },
+                  ]}
+                />
 
                 {filteredLogs.length > 0 ? (
                   <FlatList
@@ -575,7 +611,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   pillIcon: { margin: 0, padding: 0, width: 14, height: 14 },
-  pillLabel: { fontSize: 12, color: "#475569", marginHorizontal: 3 },
+  pillLabel: { fontSize: 12, marginHorizontal: 3 },
   activePillLabel: { fontWeight: "600" },
   countBadge: {
     backgroundColor: "#F1F5F9",
@@ -586,7 +622,7 @@ const styles = StyleSheet.create({
   },
   activeCountBadge: { backgroundColor: "#DBEAFE" },
   countBadgeText: { fontSize: 10, color: "#64748B" },
-  activeCountBadgeText: { color: "#1D4ED8", fontWeight: "600" },
+  activeCountBadgeText: { fontWeight: "600" },
 
   // Toolbar
   toolbarContainer: {
@@ -601,7 +637,6 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F8FAFC",
     borderWidth: 1,
     borderColor: "#E2E8F0",
     borderRadius: 8,
@@ -611,35 +646,31 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 12,
-    color: "#0F172A",
     paddingVertical: 0,
   },
   dropdownAnchorContainer: {
     flex: 1,
+    borderWidth: 1,
+    borderRadius: 8,
     position: "relative",
   },
   userDropdownBtn: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
+    borderRadius: 8,
     borderColor: "#E2E8F0",
     borderRadius: 8,
-    paddingHorizontal: 6,
+    paddingHorizontal: 4,
     height: 36,
-    backgroundColor: "#F8FAFC",
-  },
-  userDropdownBtnActive: {
-    borderColor: "#93C5FD",
-    backgroundColor: "#FFFFFF",
+    marginRight: 1,
   },
   userDropdownText: {
     flex: 1,
     fontSize: 12,
-    color: "#475569",
     marginLeft: 4,
   },
   userDropdownTextActive: {
-    color: "#2563EB",
     fontWeight: "600",
   },
   dropdownMenuOverlay: {
@@ -647,12 +678,10 @@ const styles = StyleSheet.create({
     top: 42,
     left: 0,
     right: 0,
-    backgroundColor: "#FFFFFF",
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "#E2E8F0",
     elevation: 16,
-    shadowColor: "#0F172A",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.12,
     shadowRadius: 12,
@@ -664,18 +693,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
   },
   selectedMenuItem: {
-    backgroundColor: "#EFF6FF",
+    backgroundColor: "#6d6d6d",
   },
   menuItemText: {
     fontSize: 12,
-    color: "#334155",
   },
   selectedMenuText: {
-    color: "#2563EB",
     fontWeight: "600",
   },
 
@@ -683,7 +708,6 @@ const styles = StyleSheet.create({
   feedFlexContainer: {
     flex: 1,
     position: "relative",
-    backgroundColor: "#FCFCFD",
   },
   timelineLine: {
     position: "absolute",
@@ -691,7 +715,6 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: 2,
-    backgroundColor: "#E2E8F0",
     zIndex: 0,
   },
   timelineScrollContent: {
@@ -721,11 +744,9 @@ const styles = StyleSheet.create({
   },
   logCard: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
     borderRadius: 8,
     borderWidth: 1,
     padding: 12,
-    shadowColor: "#0F172A",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 3,
@@ -749,9 +770,8 @@ const styles = StyleSheet.create({
   userNameText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#0F172A",
   },
-  timestampText: { fontSize: 10, color: "#64748B", marginTop: 1 },
+  timestampText: { fontSize: 10, marginTop: 1 },
   statusBadge: {
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -761,7 +781,6 @@ const styles = StyleSheet.create({
   statusBadgeText: { fontSize: 9, fontWeight: "700" },
   mainLogText: {
     fontSize: 12,
-    color: "#1E293B",
     lineHeight: 17,
     fontWeight: "400",
     marginBottom: 8,
@@ -776,7 +795,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderRadius: 4,
-    paddingRight: 6,
+    paddingRight: 3,
     paddingVertical: 1,
     maxWidth: "50%",
   },
@@ -815,10 +834,9 @@ const styles = StyleSheet.create({
   footerRow: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: "#FAFAFA",
   },
-  footerText: { fontSize: 11, color: "#64748B" },
-  footerHighlight: { fontWeight: "700", color: "#0F172A" },
+  footerText: { fontSize: 11 },
+  footerHighlight: { fontWeight: "700" },
 
   noMarginIcon: { margin: 0, padding: 0 },
 });
